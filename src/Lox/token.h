@@ -19,8 +19,8 @@ public:
         MINUS,
         PLUS,
         SEMICOLON,
-        SLASH,
-        STAR,
+        DIV,
+        MUL,
 
         //double character
         BANG,
@@ -56,6 +56,7 @@ public:
         WHILE,
     };
 
+    Token(const TokenType type, const int line) : type_(type), line_(line) {}
     Token(const TokenType type, const std::string& lexeme, const int line) : type_(type), lexeme_(lexeme), line_(line) {};
     ~Token() {}
     friend std::ostream& operator<<(std::ostream& os, const Token& t) {
