@@ -1,4 +1,11 @@
-add_library(lang interpreter.cpp scanner.cpp)
+set(This lang)
+set(Sources
+    interpreter.cpp
+    scanner.cpp
+    AstPrinter.cpp
+)
+
+add_library(${This} ${Sources})
 find_package(folly CONFIG REQUIRED)
 include_directories(${FOLLY_INCLUDE_DIR})
 
