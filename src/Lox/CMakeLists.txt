@@ -2,6 +2,7 @@ set(This lang)
 set(Sources
     interpreter.cpp
     scanner.cpp
+    parser.cpp
     AstPrinter.cpp
 )
 

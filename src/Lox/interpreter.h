@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include "token.h"
 
 namespace lox {
 namespace lang {
@@ -16,6 +17,9 @@ class Interpreter {
 
     static void error(int line, const std::string& message) {
         report(line, "", message);
+    }
+    static void error(const lox::parser::Token& tok, const std::string& message) {
+        report(tok.Line(), " at token=" + tok.Lexeme(), message);
     }
 
     private:

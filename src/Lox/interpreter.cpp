@@ -4,6 +4,8 @@
 
 #include "interpreter.h"
 #include "scanner.h"
+#include "parser.h"
+#include "AstPrinter.h"
 
 constexpr std::string_view kInterpreterInputPrompt = " ]=> ";
 
@@ -41,9 +43,15 @@ void Interpreter::runPrompt() {
 void Interpreter::run(const std::string& source) {
     auto scanner = lox::parser::Scanner(source);
     auto tokens = scanner.scanTokens();
+    auto parser = lox::parser::Parser(tokens);
+    auto expr = parser.parse();
+    auto printer = lox::parser::AstPrinter();
+    printer.print(expr.get());
+
     for (const lox::parser::Token& t: tokens) {
         std::cout << t << "\n"; 
     }
+
 }
 
 }

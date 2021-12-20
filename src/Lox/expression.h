@@ -1,7 +1,10 @@
 #pragma once
+#include <any>
 #include <string>
-#include "token.h"
 #include <sstream>
+#include <type_traits>
+#include <Folly/Conv.h>
+#include "token.h"
 
 namespace lox {
 namespace parser {
@@ -10,20 +13,21 @@ class AstVisitor;
 class Expression;
 class Binary;
 class Grouping;
-class Literal;
 class Unary;
+
+class Literal;
 
 class AstVisitor {
     public:
     virtual void visit(const Binary* binary) = 0;
     virtual void visit(const Grouping* grouping) = 0;
-    virtual void visit(const Literal* literal) = 0;
     virtual void visit(const Unary* unary) = 0;
+    virtual void visit(const Literal* literal) = 0;
 };
 
 class Expression {
     public:
-    virtual ~Expression() = 0;
+    virtual ~Expression() {}
     virtual const std::string toString() const = 0;
     virtual void accept(AstVisitor* visitor) const = 0;
 };
@@ -33,7 +37,7 @@ class Binary : public Expression {
     public:
     Binary(std::unique_ptr<Expression> left, Token& op, std::unique_ptr<Expression> right) 
         : left_(std::move(left)), op_(op), right_(std::move(right)) {}
-    ~Binary() {}
+    // ~Binary() {}
     void accept(AstVisitor* visitor) const override {
         visitor->visit(this);
     }
@@ -65,7 +69,7 @@ class Binary : public Expression {
 class Grouping : public Expression {
     public:
     Grouping(std::unique_ptr<Expression> exp) : expression_(std::move(exp)) {}
-    ~Grouping() {}
+    // ~Grouping() {}
     void accept(AstVisitor* visitor) const override {
         visitor->visit(this);
     }
@@ -81,23 +85,33 @@ class Grouping : public Expression {
 
 class Literal : public Expression {
     public:
-    Literal(std::string& value) : value_(value) {}
-    ~Literal() {}
+    Literal(const std::any value) : value_(value) {}
+    // ~Literal() {}
     void accept(AstVisitor* visitor) const override {
         visitor->visit(this);
     }
     const std::string toString() const override {
-        return value_;
+        auto& value_type = value_.type();
+        if (value_type == typeid(nullptr)) {
+            return "nil";
+        } else if (value_type == typeid(std::string)) {
+            return std::any_cast<std::string>(value_);
+        } else if (value_type == typeid(double)) {
+            return std::to_string(std::any_cast<double>(value_));
+        } else if (value_type == typeid(bool)) {
+            return std::any_cast<bool>(value_) ? "true" : "false";
+        }
+        return "";
     }
 
     private:
-    const std::string value_;
+    const std::any value_;
 };
 
 class Unary : public Expression {
     public:
     Unary(Token& op, std::unique_ptr<Expression> right) : op_(op), right_(std::move(right)) {}
-    ~Unary() {}
+    // ~Unary() {}
     void accept(AstVisitor* visitor) const override {
         visitor->visit(this);
     }

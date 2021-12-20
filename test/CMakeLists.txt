@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(This cpploxtest)
 set(Sources
     ScannerTests.cpp
+    ParserTests.cpp
 )
 
 add_executable(${This} ${Sources})

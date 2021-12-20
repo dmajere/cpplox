@@ -82,7 +82,7 @@ TEST(ScannerTests, TestUnterminatedString) {
 TEST(ScannerTests, TestNoCode) {
     auto s = lox::parser::Scanner(std::string{kStringEmpty});
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 0);
+    EXPECT_EQ(tokens.size(), 1);
 }
 
 TEST(ScannerTests, TestLiteral) {
@@ -97,7 +97,7 @@ TEST(ScannerTests, TestLiteral) {
 TEST(ScannerTests, TestArithmetics) {
     auto s = lox::parser::Scanner(std::string{kArithmeticExpression});
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 13);
+    EXPECT_EQ(tokens.size(), 14);
     EXPECT_EQ(tokens[2].Type(), lox::parser::Token::TokenType::NUMBER);
     EXPECT_EQ(tokens[3].Type(), lox::parser::Token::TokenType::MINUS);
     EXPECT_EQ(tokens[8].Type(), lox::parser::Token::TokenType::LEFT_PAREN);
@@ -106,7 +106,7 @@ TEST(ScannerTests, TestArithmetics) {
 TEST(ScannerTests, TestLogicalExpression) {
     auto s = lox::parser::Scanner(std::string{kLogicalExpression});
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 12);
+    EXPECT_EQ(tokens.size(), 13);
     EXPECT_EQ(tokens[1].Type(), lox::parser::Token::TokenType::EQUAL_EQUAL);
     EXPECT_EQ(tokens[3].Type(), lox::parser::Token::TokenType::AND);
     EXPECT_EQ(tokens[10].Type(), lox::parser::Token::TokenType::BANG);
@@ -115,7 +115,7 @@ TEST(ScannerTests, TestLogicalExpression) {
 TEST(ScannerTests, TestFunctionDefinition) {
     auto s = lox::parser::Scanner(std::string{kFunctionDefinition});
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 14);
+    EXPECT_EQ(tokens.size(), 15);
     EXPECT_EQ(tokens[0].Type(), lox::parser::Token::TokenType::FUN);
     EXPECT_EQ(tokens[2].Type(), lox::parser::Token::TokenType::LEFT_PAREN);
     EXPECT_EQ(tokens[8].Type(), lox::parser::Token::TokenType::RETURN);
@@ -126,17 +126,17 @@ TEST(ScannerTests, TestFunctionDefinition) {
 TEST(ScannerTests, TestSingleLineComment) {
     auto s = lox::parser::Scanner(std::string{kSignleLineComment});
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 0);
+    EXPECT_EQ(tokens.size(), 1);
 }
 
 TEST(ScannerTests, TestMultiLineComment) {
     auto s = lox::parser::Scanner(std::string(kMultiLineComment));
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 0);
+    EXPECT_EQ(tokens.size(), 1);
 }
 
 TEST(ScannerTests, TestClassDefinition) {
     auto s = lox::parser::Scanner(std::string{kClassDefinition});
     auto tokens = s.scanTokens();
-    EXPECT_EQ(tokens.size(), 28);
+    EXPECT_EQ(tokens.size(), 29);
 }

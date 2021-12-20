@@ -54,6 +54,7 @@ public:
         TRUE,
         VAR,
         WHILE,
+        END,
     };
 
     Token(const TokenType type, const int line) : type_(type), line_(line) {}

@@ -83,6 +83,7 @@ std::vector<Token> Scanner::scanTokens() {
             advance();
         }
     }
+    result.push_back(Token(Token::TokenType::END, line_));
     return result;
 }
 
