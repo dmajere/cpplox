@@ -2,130 +2,129 @@
 #include <any>
 #include <string>
 #include <sstream>
-#include <type_traits>
+#include <vector>
 #include <Folly/Conv.h>
 #include "token.h"
 
 namespace lox {
 namespace parser {
 
-class AstVisitor;
-class Expression;
-class Binary;
-class Grouping;
-class Unary;
-
-class Literal;
+struct Expression;
+struct Binary;
+struct Grouping;
+struct Unary;
+struct Literal;
+struct Block;
+struct Condition;
 
 class AstVisitor {
     public:
-    virtual void visit(const Binary* binary) = 0;
-    virtual void visit(const Grouping* grouping) = 0;
-    virtual void visit(const Unary* unary) = 0;
-    virtual void visit(const Literal* literal) = 0;
+    virtual std::any visit(const Binary* binary) = 0;
+    virtual std::any visit(const Grouping* grouping) = 0;
+    virtual std::any visit(const Unary* unary) = 0;
+    virtual std::any visit(const Literal* literal) = 0;
+    virtual std::any visit(const Block* block) = 0;
+    virtual std::any visit(const Condition* condition) = 0;
+    virtual ~AstVisitor() = default;
 };
 
-class Expression {
-    public:
-    virtual ~Expression() {}
-    virtual const std::string toString() const = 0;
-    virtual void accept(AstVisitor* visitor) const = 0;
+struct Expression {
+    virtual std::any accept(AstVisitor* visitor) const = 0;
+    virtual ~Expression() {};
 };
 
 
-class Binary : public Expression {
-    public:
-    Binary(std::unique_ptr<Expression> left, Token& op, std::unique_ptr<Expression> right) 
-        : left_(std::move(left)), op_(op), right_(std::move(right)) {}
-    // ~Binary() {}
-    void accept(AstVisitor* visitor) const override {
-        visitor->visit(this);
-    }
-    const std::string toString() const override {
-        std::stringstream ss;
-        ss << left_->toString() 
-           << " "  << op_ << " " 
-           << right_->toString();
-        return ss.str();
+struct Binary : public Expression {
+    Binary(
+        std::unique_ptr<Expression> left, 
+        const Token& op, 
+        std::unique_ptr<Expression> right) 
+    : left(std::move(left))
+    , op(op)
+    , right(std::move(right)) {}
+    ~Binary() {}
+
+    std::any accept(AstVisitor* visitor) const override {
+        return visitor->visit(this);
     }
 
-    const Expression* getLeft() const {
-        return left_.get();
-    }
-    const Token& getToken() const {
-        return op_;
-    }
-    const Expression* getRight() const {
-        return right_.get();
-    }
-
-
-    private:
-    std::unique_ptr<Expression> left_;
-    const Token op_;
-    std::unique_ptr<Expression> right_;
+    std::unique_ptr<Expression> left;
+    const Token op;
+    std::unique_ptr<Expression> right;
 };
 
-class Grouping : public Expression {
-    public:
-    Grouping(std::unique_ptr<Expression> exp) : expression_(std::move(exp)) {}
-    // ~Grouping() {}
-    void accept(AstVisitor* visitor) const override {
-        visitor->visit(this);
-    }
-    const std::string toString() const override {
-        std::stringstream ss;
-        ss << expression_->toString();
-        return ss.str();
+struct Grouping : public Expression {
+    Grouping(std::unique_ptr<Expression> exp) 
+    : expression(std::move(exp)) {}
+    ~Grouping() {}
+    std::any accept(AstVisitor* visitor) const override {
+        return visitor->visit(this);
     }
 
-    private:
-    std::unique_ptr<Expression> expression_;
+    std::unique_ptr<Expression> expression;
 };
 
-class Literal : public Expression {
-    public:
-    Literal(const std::any value) : value_(value) {}
-    // ~Literal() {}
-    void accept(AstVisitor* visitor) const override {
-        visitor->visit(this);
-    }
-    const std::string toString() const override {
-        auto& value_type = value_.type();
-        if (value_type == typeid(nullptr)) {
-            return "nil";
-        } else if (value_type == typeid(std::string)) {
-            return std::any_cast<std::string>(value_);
-        } else if (value_type == typeid(double)) {
-            return std::to_string(std::any_cast<double>(value_));
-        } else if (value_type == typeid(bool)) {
-            return std::any_cast<bool>(value_) ? "true" : "false";
-        }
-        return "";
+struct Unary : public Expression {
+    Unary(
+        const Token& op, 
+        std::unique_ptr<Expression> right) 
+    : op(op)
+    , right(std::move(right)) {}
+    ~Unary() {}
+    std::any accept(AstVisitor* visitor) const override {
+        return visitor->visit(this);
     }
 
-    private:
-    const std::any value_;
+    const Token op;
+    std::unique_ptr<Expression> right;
 };
 
-class Unary : public Expression {
-    public:
-    Unary(Token& op, std::unique_ptr<Expression> right) : op_(op), right_(std::move(right)) {}
-    // ~Unary() {}
-    void accept(AstVisitor* visitor) const override {
-        visitor->visit(this);
+
+struct Literal : public Expression {
+    Literal(const std::any value) : value(value) {}
+    ~Literal() {}
+    std::any accept(AstVisitor* visitor) const override {
+        return visitor->visit(this);
     }
-    const std::string toString() const override {
-        std::stringstream ss;
-        ss << op_ << " " << right_->toString();
-        return ss.str();
-    }
-    
-    private:
-    const Token op_;
-    std::unique_ptr<Expression> right_;
+
+    const std::any value;
 };
 
+struct Block : public Expression {
+    Block() : expressions{} {}
+    ~Block() {}
+
+    std::any accept(AstVisitor* visitor) const override {
+        return visitor->visit(this);
+    }
+    std::vector<std::unique_ptr<Expression>> expressions;
+};
+
+struct Condition : public Expression {
+    Condition(
+        std::unique_ptr<Expression> predicate,
+        std::unique_ptr<Expression> then)
+    : predicate(std::move(predicate))
+    , then(std::move(then))
+    , alternative(nullptr) {}
+
+    Condition(
+        std::unique_ptr<Expression> predicate,
+        std::unique_ptr<Expression> then,
+        std::unique_ptr<Expression> alternative) 
+    : predicate(std::move(predicate))
+    , then(std::move(then))
+    , alternative(std::move(alternative)) {}
+    ~Condition() {}
+
+    std::any accept(AstVisitor* visitor) const override {
+        return visitor->visit(this);
+    }
+
+    std::unique_ptr<Expression> predicate;
+    std::unique_ptr<Expression> then;
+    std::unique_ptr<Expression> alternative;
+};
 
 }
 }

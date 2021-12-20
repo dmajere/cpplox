@@ -1,0 +1,11 @@
+block -> expression (, expression)*;
+expression -> equality | condition;
+equality -> comparison ( ("!=" | "==") comparison)*;
+comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
+term -> factor ( ("-" | "+") factor)*;
+factor -> unary ( ("/" | "*") unary)*;
+unary -> ("!" | "-" | "--" | "++" ) unary | primary;
+primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")";
+condition -> if | ternary;
+if -> "if (" expression ") {" expression "}" ("else {"  expression "}")?;  
+ternary -> expression "?" expression (: expression)?;

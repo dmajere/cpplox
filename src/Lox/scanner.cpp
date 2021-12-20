@@ -10,64 +10,81 @@ namespace parser {
 std::vector<Token> Scanner::scanTokens() {
     std::vector<Token> result;
     while(const char c = peek()) {
-        // std::cout << "Next char " << c << "\n";
         if (match('(')) {
-            result.push_back(Token(Token::TokenType::LEFT_PAREN, line_));
+            result.push_back(Token(Token::TokenType::LEFT_PAREN, "(", line_));
         } else if (match(')')) {
-            result.push_back(Token(Token::TokenType::RIGHT_PAREN, line_));
+            result.push_back(Token(Token::TokenType::RIGHT_PAREN, ")", line_));
         } else if (match('{')) {
-            result.push_back(Token(Token::TokenType::LEFT_BRACE, line_));
+            result.push_back(Token(Token::TokenType::LEFT_BRACE, "{", line_));
         } else if (match('}')) {
-            result.push_back(Token(Token::TokenType::RIGHT_BRACE, line_));
+            result.push_back(Token(Token::TokenType::RIGHT_BRACE, "}", line_));
         } else if (match(',')) {
-            result.push_back(Token(Token::TokenType::COMMA, line_));
+            result.push_back(Token(Token::TokenType::COMMA, ",", line_));
         } else if (match('.')) {
-            result.push_back(Token(Token::TokenType::DOT, line_));
+            result.push_back(Token(Token::TokenType::DOT, ".", line_));
+        } else if (match('?')) {
+            result.push_back(Token(Token::TokenType::QUESTION, "?", line_));
+        } else if (match(':')) {
+            result.push_back(Token(Token::TokenType::COLON, ":", line_));
         } else if (match('-')) {
-            // TODO: implement -=
-            result.push_back(Token(Token::TokenType::MINUS, line_));
+            if (match('-')) {
+                result.push_back(Token(Token::TokenType::MINUS_MINUS, "--", line_));
+            } else if(match('=')) {
+                result.push_back(Token(Token::TokenType::MINUS_EQUAL, "-=", line_));
+            } else {
+                result.push_back(Token(Token::TokenType::MINUS, "+", line_));
+            }
         } else if (match('+')) {
-            result.push_back(Token(Token::TokenType::PLUS, line_));
+            if (match('+')) {
+                result.push_back(Token(Token::TokenType::PLUS_PLUS, "++", line_));
+            } else if (match('=')) {
+                result.push_back(Token(Token::TokenType::PLUS_EQUAL, "+=", line_));
+            } else {
+                result.push_back(Token(Token::TokenType::PLUS, "+", line_));
+            }
         } else if (match(';')) {
-            result.push_back(Token(Token::TokenType::SEMICOLON, line_));
+            result.push_back(Token(Token::TokenType::SEMICOLON, ";", line_));
         } else if (match('/')) {
             if (match('*')) {
                 multiLineComment();
             } else if (match('/')) {
                 singleLineComment();
+            } else if (match('=')) {
+                result.push_back(Token(Token::TokenType::SLASH_EQUAL, "/=", line_));
             } else {
-                result.push_back(Token(Token::TokenType::DIV, line_));
+                result.push_back(Token(Token::TokenType::SLASH, "/", line_));
             }
         } else if (match('*')) {
-            result.push_back(Token(Token::TokenType::MUL, line_));
+            if (match('=')) {
+                result.push_back(Token(Token::TokenType::STAR_EQUAL, "*=", line_));
+            } else {
+                result.push_back(Token(Token::TokenType::STAR, "*", line_));
+            }
         } else if (match('!')) {
-            result.push_back(
-                Token(
-                    match('=') ? 
-                        Token::TokenType::BANG_EQUAL : 
-                        Token::TokenType::BANG, 
-                    line_));
+            if (match('=')) {
+                result.push_back(Token(Token::TokenType::BANG_EQUAL, "!=", line_));
+
+            } else {
+                result.push_back(Token(Token::TokenType::BANG, "!", line_));
+            }
         } else if (match('=')) {
-            result.push_back(
-                Token(
-                    match('=') ? 
-                        Token::TokenType::EQUAL_EQUAL : 
-                        Token::TokenType::EQUAL, 
-                    line_));
+            if (match('=')) {
+                result.push_back(Token(Token::TokenType::EQUAL_EQUAL, "==", line_));
+            } else {
+                result.push_back(Token(Token::TokenType::EQUAL, "=", line_));
+            }
         } else if (match('>')) {
-            result.push_back(
-                Token(
-                    match('=') ? 
-                        Token::TokenType::GREATER_EQUAL : 
-                        Token::TokenType::GREATER, 
-                    line_));
+            if (match('=')) {
+                result.push_back(Token(Token::TokenType::GREATER_EQUAL, ">=", line_));
+            } else {
+                result.push_back(Token(Token::TokenType::GREATER, ">", line_));
+            }
         } else if (match('<')) {
-            result.push_back(
-                Token(
-                    match('=') ? 
-                        Token::TokenType::LESS_EQUAL : 
-                        Token::TokenType::LESS, 
-                    line_));
+            if (match('=')) {
+                result.push_back(Token(Token::TokenType::LESS_EQUAL, "<=", line_));
+            } else {
+                result.push_back(Token(Token::TokenType::LESS, "<", line_));
+            }
         } else if (match('\n')) {
             line_++;
         } else if (match(' ') || match('\t') || match('\r')) {

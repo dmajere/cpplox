@@ -13,20 +13,53 @@ namespace parser {
 
 class Parser {
     public:
+    struct ParseError: public std::runtime_error {
+        using std::runtime_error::runtime_error;
+    };
+
     Parser(std::vector<Token> tokens) : tokens_(tokens), current_(0) {}
 
     std::unique_ptr<Expression> parse() {
         try {
-            return expression();
-        } catch(std::domain_error& e) {
+            return block();
+        } catch(ParseError& e) {
             return nullptr;
         }
     }
 
     private:
 
-    std::unique_ptr<Expression> expression() {
-        return equality();
+    std::unique_ptr<Expression> block() {
+        auto expr = expression();
+        if (check(TT::COMMA)) {
+            auto block = std::make_unique<Block>();
+            block->expressions.push_back(std::move(expr));
+            while (match({TT::COMMA})) {
+                auto expr = expression();
+                block->expressions.push_back(std::move(expr));
+            }
+            return block;
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Expression> expression(bool inBlockStatement = false) {
+        auto expr = equality();
+
+        if (match({TT::QUESTION})) {
+            return ternary(std::move(expr));
+        }
+
+        return expr;
+    }
+
+
+    std::unique_ptr<Expression> ternary(std::unique_ptr<Expression> predicate) {
+        auto then = expression();
+        if (match({TT::COLON})) {
+            return std::make_unique<Condition>(std::move(predicate), std::move(then), expression());
+        }
+        return std::make_unique<Condition>(std::move(predicate), std::move(then));
     }
 
     std::unique_ptr<Expression> equality() {
@@ -62,7 +95,7 @@ class Parser {
     std::unique_ptr<Expression> factor() {
         auto expr = unary();
 
-        while(match({TT::DIV, TT::MUL})){
+        while(match({TT::SLASH, TT::STAR})){
             Token op = previous();
             auto right = unary();
             expr = std::make_unique<Binary>(std::move(expr), op, std::move(right));
@@ -72,6 +105,12 @@ class Parser {
 
     std::unique_ptr<Expression> unary() {
         if(match({TT::BANG, TT::MINUS})) {
+            Token op = previous();
+            auto right = unary();
+            return std::make_unique<Unary>(op, std::move(right));
+        }
+        // Prefix increment/decrement
+        if (match({TT::PLUS_PLUS, TT::MINUS_MINUS})) {
             Token op = previous();
             auto right = unary();
             return std::make_unique<Unary>(op, std::move(right));
@@ -87,13 +126,18 @@ class Parser {
             return std::make_unique<Literal>(true);
         }
         if (match({TT::NIL})) {
-            return nullptr;
+            return std::make_unique<Literal>(nullptr);
         }
         if (match({TT::NUMBER})) {
-            return std::make_unique<Literal>(folly::to<double>(previous().Lexeme()));
+            auto number = std::make_unique<Literal>(folly::to<double>(previous().lexeme));
+            if (match({TT::MINUS_MINUS, TT::PLUS_PLUS})) {
+                Token op = previous();
+                return std::make_unique<Unary>(op, std::move(number));
+            }
+            return number;
         }
         if (match({TT::STRING})) {
-            return std::make_unique<Literal>(previous().Lexeme());
+            return std::make_unique<Literal>(previous().lexeme);
         }
         if (match({TT::LEFT_PAREN})) {
             auto expr = expression();
@@ -102,26 +146,32 @@ class Parser {
         }
 
         lox::lang::Interpreter::error(peek(), "Expect expresion");
-        throw std::domain_error("Expect expression");
+        throw ParseError("Expect expression");
     }
 
-    bool match(std::vector<Token::TokenType> types) {
-        for (const auto& t : types) {
-            if (check(t)) {
-                advance();
-                return true;
-            }
+    bool match(const std::vector<Token::TokenType>& types) {
+        if (check(types)) {
+            advance();
+            return true;
         }
         return false;
     }
     const Token& consume(Token::TokenType type, const std::string& message) {
         if (check(type)) return advance();
         lox::lang::Interpreter::error(peek(), message);
-        throw std::domain_error(message);
+        throw ParseError(message);
     }
 
     bool check(const Token::TokenType& type) const {
-        return isAtEnd() ? false : peek().Type() == type;
+        return isAtEnd() ? false : peek().type == type;
+    }
+    bool check(const std::vector<Token::TokenType>& types) const {
+        for (const Token::TokenType tt : types) {
+            if (check(tt)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     const Token& advance() {
@@ -130,7 +180,7 @@ class Parser {
     }
 
     bool isAtEnd() const {
-        return peek().Type() == Token::TokenType::END;
+        return peek().type == Token::TokenType::END;
     }
 
     const Token& peek() const {
@@ -147,8 +197,8 @@ class Parser {
     void synchronize() {
         advance();
         while(!isAtEnd()) {
-            if (previous().Type() == TT::SEMICOLON) return;
-            switch(peek().Type()) {
+            if (previous().type == TT::SEMICOLON) return;
+            switch(peek().type) {
                 case TT::CLASS:
                 case TT::FOR:
                 case TT::FUN:

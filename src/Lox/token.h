@@ -6,8 +6,7 @@
 namespace lox {
 namespace parser {
 
-class Token {
-public:
+struct Token {
     enum class TokenType {
         // single character
         LEFT_PAREN,
@@ -18,19 +17,27 @@ public:
         DOT,
         MINUS,
         PLUS,
+        COLON,
         SEMICOLON,
-        DIV,
-        MUL,
+        SLASH,
+        STAR,
+        BANG,
+        EQUAL,
+        GREATER,
+        LESS,
+        QUESTION,
 
         //double character
-        BANG,
         BANG_EQUAL,
-        EQUAL,
         EQUAL_EQUAL,
-        GREATER,
         GREATER_EQUAL,
-        LESS,
         LESS_EQUAL,
+        MINUS_EQUAL,
+        PLUS_EQUAL,
+        SLASH_EQUAL,
+        STAR_EQUAL,
+        MINUS_MINUS,
+        PLUS_PLUS,
 
         // literals
         IDENTIFIER,
@@ -57,31 +64,17 @@ public:
         END,
     };
 
-    Token(const TokenType type, const int line) : type_(type), line_(line) {}
-    Token(const TokenType type, const std::string& lexeme, const int line) : type_(type), lexeme_(lexeme), line_(line) {};
+    Token(const TokenType type, const int line) : type(type), line(line) {}
+    Token(const TokenType type, const std::string& lexeme, const int line) : type(type), lexeme(lexeme), line(line) {};
     ~Token() {}
     friend std::ostream& operator<<(std::ostream& os, const Token& t) {
-        os << "Token[" << static_cast<int>(t.type_) << "] " << t.lexeme_ << " [line:" << t.line_ << "]";
+        os << "Token[" << static_cast<int>(t.type) << "] " << t.lexeme << " [line:" << t.line << "]";
         return os;
     }
 
-    const TokenType Type() const {
-        return type_;
-    }
-
-    std::string Lexeme() const {
-        return lexeme_;
-    }
-
-    const int Line() const {
-        return line_;
-    }
-
-private:
-    const TokenType type_;
-    const std::string lexeme_;
-    // std::unique_ptr<> literal;
-    const int line_;
+    const TokenType type;
+    const std::string lexeme;
+    const int line;
 };
 
 }

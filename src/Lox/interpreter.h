@@ -19,7 +19,7 @@ class Interpreter {
         report(line, "", message);
     }
     static void error(const lox::parser::Token& tok, const std::string& message) {
-        report(tok.Line(), " at token=" + tok.Lexeme(), message);
+        report(tok.line, " at token=" + tok.lexeme, message);
     }
 
     private:
