@@ -1,5 +1,6 @@
 block -> expression (, expression)*;
-expression -> equality | condition;
+expression -> equality | condition ;
+
 equality -> comparison ( ("!=" | "==") comparison)*;
 comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
 term -> factor ( ("-" | "+") factor)*;

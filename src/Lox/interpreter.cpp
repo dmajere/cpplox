@@ -13,12 +13,15 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> unary) {
     switch (unary->op.type)
     {
     case lox::parser::Token::TokenType::MINUS:
+        checkNumberOperand(unary->op, right);
         return -(std::any_cast<double>(right));
     case lox::parser::Token::TokenType::BANG:
         return isTruthy(right);
     case lox::parser::Token::TokenType::MINUS_MINUS:
+        checkNumberOperand(unary->op, right);
         return std::any_cast<double>(right) - 1;
     case lox::parser::Token::TokenType::PLUS_PLUS:
+        checkNumberOperand(unary->op, right);
         return std::any_cast<double>(right) + 1;
     default:
         return nullptr;
@@ -38,12 +41,16 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> binary) {
     case lox::parser::Token::TokenType::EQUAL_EQUAL:
         return isEqual(left, right);
     case lox::parser::Token::TokenType::GREATER:
+        checkNumberOperands(binary->op, left, right);
         return std::any_cast<double&>(left) > std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::GREATER_EQUAL:
+        checkNumberOperands(binary->op, left, right);
         return std::any_cast<double&>(left) >= std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::LESS:
+        checkNumberOperands(binary->op, left, right);
         return std::any_cast<double&>(left) < std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::LESS_EQUAL:
+        checkNumberOperands(binary->op, left, right);
         return std::any_cast<double&>(left) <= std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::PLUS:
         if (left_type == typeid(double) && right_type == typeid(double)) {
@@ -52,11 +59,21 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> binary) {
         if (left_type == typeid(std::string) && right_type == typeid(std::string)) {
             return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
         }
+        if (left_type == typeid(std::string) || right_type == typeid(std::string)) {
+            return toString(left) + toString(right);
+        }
+        throw RuntimeError(binary->op, "Operands must be either numbers or strings.");
     case lox::parser::Token::TokenType::MINUS:
+        checkNumberOperands(binary->op, left, right);
         return std::any_cast<double>(left) - std::any_cast<double>(right);
     case lox::parser::Token::TokenType::STAR:
+        checkNumberOperands(binary->op, left, right);
         return std::any_cast<double>(left) * std::any_cast<double>(right);
     case lox::parser::Token::TokenType::SLASH:
+        checkNumberOperands(binary->op, left, right);
+        if (std::any_cast<double>(right) == 0) {
+            throw ZeroDivision(binary->op, "Second operand must be non-zero.");
+        } 
         return std::any_cast<double>(left) / std::any_cast<double>(right);
     default:
         break;
@@ -126,6 +143,20 @@ bool Interpreter::isEqual(const std::any& left,const std::any& right) const {
         return false;
     }
     return false;
+}
+bool Interpreter::checkType(const std::any& object, const std::type_info& type) const {
+    return object.type() == type;
+}
+
+void Interpreter::checkNumberOperand(const lox::parser::Token& token, const std::any& object) const {
+    if (checkType(object, typeid(double))) return;
+    throw RuntimeError(token, "Operand must be number.");
+}
+
+void Interpreter::checkNumberOperands(const lox::parser::Token& token, const std::any& left, const std::any& right) const {
+    auto& dti = typeid(double);
+    if (checkType(left, dti) && checkType(right, dti)) return;
+    throw RuntimeError(token, "Operands must be numbers.");
 }
 
 

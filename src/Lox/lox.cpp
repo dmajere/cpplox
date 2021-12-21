@@ -8,15 +8,15 @@
 #include "AstPrinter.h"
 #include "parser.h"
 #include "scanner.h"
-#include "interpreter.h"
 
-constexpr std::string_view kLoxInputPrompt = "[in]=> ";
-constexpr std::string_view kLoxOutputPrompt = "[out]: ";
+constexpr std::string_view kLoxInputPrompt = "[In]: ";
+constexpr std::string_view kLoxOutputPrompt = "[Out]: ";
 
 namespace lox {
 namespace lang {
 
 bool Lox::hadError = false;
+bool Lox::hadRuntimeError = false;
 
 
 void Lox::runFromFile(const std::string& path) {
@@ -24,6 +24,7 @@ void Lox::runFromFile(const std::string& path) {
   std::string code;
   folly::readFile(f.fd(), code);
   run(code);
+  // TODO: had error exits
 }
 
 void Lox::runPrompt() {
@@ -31,14 +32,9 @@ void Lox::runPrompt() {
     if (std::cin.fail()) {
       return;
     }
-    // TODO: result is expression
-    // print output prompt + expression.repr()
     if (!line.empty()) {
       run(line);
       std::cout << "\n";
-    }
-    if (hadError) {
-      return;
     }
     std::cout << kLoxInputPrompt;
   }
@@ -47,7 +43,7 @@ void Lox::runPrompt() {
 void Lox::run(const std::string& source) {
   auto scanner = lox::parser::Scanner(source);
   auto tokens = scanner.scanTokens();
-
+  //if debug
   for (const lox::parser::Token& t : tokens) {
     std::cout << t << "\n";
   }
@@ -55,12 +51,19 @@ void Lox::run(const std::string& source) {
   auto parser = lox::parser::Parser(tokens);
   auto expr = parser.parse();
 
-  auto printer = lox::parser::AstPrinter();
-  std::cout << "AST: " << printer.print(expr) << "\n";
+  if (expr) {
+    auto printer = lox::parser::AstPrinter();
+    //TODO if debug
+    std::cout << "AST: " << printer.print(expr) << "\n";
 
-  auto interpreter = lox::lang::Interpreter();
-  auto result = interpreter.evaluate(expr);
-  std::cout << kLoxOutputPrompt << print_output(result);  
+    auto interpreter = lox::lang::Interpreter();
+    try {
+      auto result = interpreter.evaluate(expr);
+      std::cout << kLoxOutputPrompt << lox::lang::Interpreter::toString(result);  
+    } catch (lox::lang::Interpreter::RuntimeError& e) {
+      runtime_error(e);
+    }
+  }
 }
 
 

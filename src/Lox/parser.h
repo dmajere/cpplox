@@ -1,5 +1,4 @@
 #pragma once
-#include <Folly/Conv.h>
 
 #include <vector>
 
@@ -130,7 +129,7 @@ class Parser {
     }
     if (match({TT::NUMBER})) {
       auto number =
-          std::make_shared<Literal>(folly::to<double>(previous().lexeme));
+          std::make_shared<Literal>(atof(previous().lexeme.c_str()));
       if (match({TT::MINUS_MINUS, TT::PLUS_PLUS})) {
         Token op = previous();
         return std::make_shared<Unary>(op, std::move(number));
@@ -176,7 +175,7 @@ class Parser {
   }
 
   const Token& advance() {
-    !isAtEnd() && current_++;
+    if (!isAtEnd()) current_++;
     return previous();
   }
 

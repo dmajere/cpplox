@@ -4,6 +4,7 @@
 #include <string>
 
 #include "token.h"
+#include "interpreter.h"
 
 namespace lox {
 namespace lang {
@@ -20,12 +21,19 @@ class Lox {
   static void error(int line, const std::string& message) {
     report(line, "", message);
   }
+
   static void error(const lox::parser::Token& tok, const std::string& message) {
-    report(tok.line, " at token=" + tok.lexeme, message);
+    report(tok.line, " at token " + tok.lexeme, message);
+  }
+
+  static void runtime_error(lox::lang::Interpreter::RuntimeError& error) {
+    report(error.token.line, "at token " + error.token.lexeme, error.what());
+    hadRuntimeError = true;
   }
 
  private:
   static bool hadError;
+  static bool hadRuntimeError;
 
   static void report(int line, const std::string& where,
                      const std::string& message) {
@@ -33,6 +41,7 @@ class Lox {
               << "\n";
     hadError = true;
   }
+
   static std::string print_output(const std::any& object) {
     auto& object_type = object.type();
 
@@ -43,7 +52,7 @@ class Lox {
       return "nil";
     }
     if (object_type == typeid(std::string)) {
-      return std::any_cast<std::string>(object);
+      return "\"" + std::any_cast<std::string>(object) + "\"";
     }
     if (object_type == typeid(bool)) {
       return std::any_cast<bool>(object) ? "true" : "false";
@@ -53,6 +62,7 @@ class Lox {
     }
     return "nil";
   }
+
 
 };
 
