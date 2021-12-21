@@ -1,8 +1,8 @@
 set(This lang)
-set(Sources
-    interpreter.cpp
+set(Sources 
+    lox.cpp
     scanner.cpp
-    parser.cpp
+    interpreter.cpp
     AstPrinter.cpp
 )
 

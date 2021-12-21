@@ -170,11 +170,10 @@ TEST(ParserTests, TestBinaryFactor) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Binary* bin = static_cast<Binary*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(bin);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "( / ( * 1.000000 2.000000 ) 3.000000 )"
     );
 }
@@ -192,11 +191,10 @@ TEST(ParserTests, TestBinaryTerm) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Binary* bin = static_cast<Binary*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(bin);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "( - ( + 1.000000 2.000000 ) 3.000000 )"
     );
 }
@@ -214,11 +212,10 @@ TEST(ParserTests, TestBinaryPrecedence) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Binary* bin = static_cast<Binary*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(bin);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "( + 1.000000 ( * 2.000000 3.000000 ) )"
     );
 }
@@ -236,11 +233,10 @@ TEST(ParserTests, TestBinaryComparison) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Binary* bin = static_cast<Binary*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(bin);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "( <= ( > 1.000000 2.000000 ) 3.000000 )"
     );
 }
@@ -258,11 +254,10 @@ TEST(ParserTests, TestBinaryEquality) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Binary* bin = static_cast<Binary*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(bin);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "( != ( == 1.000000 2.000000 ) 3.000000 )"
     );
 }
@@ -278,11 +273,10 @@ TEST(ParserTests, TestConditionTernaryPartial) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Condition* cond = static_cast<Condition*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(cond);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "(if (true) 1.000000 )"
     );
 }
@@ -300,11 +294,30 @@ TEST(ParserTests, TestConditionTernaryFull) {
     auto expr = p.parse();
     EXPECT_TRUE(expr);
 
-    Condition* cond = static_cast<Condition*>(expr.get());
     auto printer = AstPrinter();
-    auto result = printer.visit(cond);
+    auto result = printer.print(expr);
     EXPECT_EQ(
-        std::any_cast<std::string>(result),
+        result,
         "(if (true) 1.000000 else 0.000000 )"
+    );
+}
+
+TEST(ParserTests, TestBlock) {
+    Tokens tokens = {
+        {TT::TRUE, "true", 0},
+        {TT::COMMA, ",", 0},
+        {TT::TRUE, "true", 0},
+        {TT::COMMA, ",", 0},
+        {TT::TRUE, "true", 0},
+        {TT::END, 0},
+    };
+    auto p = Parser(tokens);
+    auto expr = p.parse();
+    EXPECT_TRUE(expr);
+
+    auto printer = AstPrinter();
+    auto result = printer.print(expr);
+    EXPECT_EQ(
+       result, "( true, true, true, )" 
     );
 }

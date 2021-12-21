@@ -1,37 +1,26 @@
 #pragma once
-#include <iostream>
-#include <string>
-#include "token.h"
+#include <any>
+
+#include "expression.h"
 
 namespace lox {
 namespace lang {
-        
-class Interpreter {
-    public:
-    Interpreter() {}
-    ~Interpreter() {}
 
-    void runFromFile(const std::string& path);
-    void runPrompt();
-    void run(const std::string& code);
+class Interpreter : public lox::parser::AstVisitor {
+ public:
+  std::any visit(std::shared_ptr<const lox::parser::Literal> literal);
+  std::any visit(std::shared_ptr<const lox::parser::Grouping> grouping);
+  std::any visit(std::shared_ptr<const lox::parser::Unary> unary);
+  std::any visit(std::shared_ptr<const lox::parser::Binary> binary);
+  std::any visit(std::shared_ptr<const lox::parser::Block> block);
+  std::any visit(std::shared_ptr<const lox::parser::Condition> condition);
+  std::any evaluate(std::shared_ptr<lox::parser::Expression> expr);
 
-    static void error(int line, const std::string& message) {
-        report(line, "", message);
-    }
-    static void error(const lox::parser::Token& tok, const std::string& message) {
-        report(tok.line, " at token=" + tok.lexeme, message);
-    }
-
-    private:
-
-    static bool hadError;
-    
-    static void report(int line, const std::string& where, const std::string& message) {
-        std::cout << "[line " << line << "] Error " << where << " : " << message << "\n"; 
-        hadError = true;
-    }
+private:
+  bool isTruthy(const std::any& object) const;
+  bool isEqual(const std::any& left,const std::any& right) const;
 
 };
 
-} // namespace lang
-} // namespace name
+}  // namespace lang
+}  // namespace lox

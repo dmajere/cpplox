@@ -1,60 +1,133 @@
-#include <string_view>
-#include <folly/File.h>
-#include <folly/FileUtil.h>
-
 #include "interpreter.h"
-#include "scanner.h"
-#include "parser.h"
-#include "AstPrinter.h"
-
-constexpr std::string_view kInterpreterInputPrompt = " ]=> ";
 
 namespace lox {
 namespace lang {
 
-bool Interpreter::hadError = false;
-
-void Interpreter::runFromFile(const std::string& path) {
-    auto f = folly::File(path);
-    std::string code;
-    folly::readFile(f.fd(), code);
-    run(code);
-    
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Literal> literal) { return literal->value; }
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Grouping> grouping) {
+    return evaluate(grouping->expression);
 }
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> unary) {
+    auto right = evaluate(unary->right);
 
-void Interpreter::runPrompt() {
-    for (std::string line; ; std::getline(std::cin, line)) {
-        if (std::cin.fail()) {
-            return;
-        }
-        // TODO: result is expression
-        // print output prompt + expression.repr()
-        if (!line.empty()) {
-            run(line);
-            std::cout << "\n";
-        }
-        if (hadError) {
-            return;
-        }
-        std::cout << kInterpreterInputPrompt;
+    switch (unary->op.type)
+    {
+    case lox::parser::Token::TokenType::MINUS:
+        return -(std::any_cast<double>(right));
+    case lox::parser::Token::TokenType::BANG:
+        return isTruthy(right);
+    case lox::parser::Token::TokenType::MINUS_MINUS:
+        return std::any_cast<double>(right) - 1;
+    case lox::parser::Token::TokenType::PLUS_PLUS:
+        return std::any_cast<double>(right) + 1;
+    default:
+        return nullptr;
     }
 }
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> binary) {
+    auto left = evaluate(binary->left);
+    auto right = evaluate(binary->right);
+    auto& left_type = left.type();
+    auto& right_type = right.type();
+    //TODO: type comprehension
 
-void Interpreter::run(const std::string& source) {
-    auto scanner = lox::parser::Scanner(source);
-    auto tokens = scanner.scanTokens();
-    
-    for (const lox::parser::Token& t: tokens) {
-        std::cout << t << "\n"; 
+    switch (binary->op.type)
+    {
+    case lox::parser::Token::TokenType::BANG_EQUAL:
+        return !isEqual(left, right);
+    case lox::parser::Token::TokenType::EQUAL_EQUAL:
+        return isEqual(left, right);
+    case lox::parser::Token::TokenType::GREATER:
+        return std::any_cast<double&>(left) > std::any_cast<double&>(right);
+    case lox::parser::Token::TokenType::GREATER_EQUAL:
+        return std::any_cast<double&>(left) >= std::any_cast<double&>(right);
+    case lox::parser::Token::TokenType::LESS:
+        return std::any_cast<double&>(left) < std::any_cast<double&>(right);
+    case lox::parser::Token::TokenType::LESS_EQUAL:
+        return std::any_cast<double&>(left) <= std::any_cast<double&>(right);
+    case lox::parser::Token::TokenType::PLUS:
+        if (left_type == typeid(double) && right_type == typeid(double)) {
+            return std::any_cast<double&>(left) + std::any_cast<double&>(right);
+        }
+        if (left_type == typeid(std::string) && right_type == typeid(std::string)) {
+            return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
+        }
+    case lox::parser::Token::TokenType::MINUS:
+        return std::any_cast<double>(left) - std::any_cast<double>(right);
+    case lox::parser::Token::TokenType::STAR:
+        return std::any_cast<double>(left) * std::any_cast<double>(right);
+    case lox::parser::Token::TokenType::SLASH:
+        return std::any_cast<double>(left) / std::any_cast<double>(right);
+    default:
+        break;
     }
 
-    auto parser = lox::parser::Parser(tokens);
-    auto expr = parser.parse();
-    auto printer = lox::parser::AstPrinter();
-    printer.print(expr.get());
-
-
+    return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> block) {
+    for (int i = 0; i < block->expressions.size(); i++) {
+        if (i == block->expressions.size() - 1) {
+            return evaluate(block->expressions[i]);
+        }
+        evaluate(block->expressions[i]);
+    }
+    return nullptr;
 }
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Condition> condition) {
+    auto predicate = evaluate(condition->predicate);
+    if (isTruthy(predicate)) {
+        return evaluate(condition->then);
+    }
+    if (condition->alternative) {
+        return evaluate(condition->alternative);
+    }
+    return nullptr;
 }
+
+
+std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
+    return expr->accept(this);
+}
+bool Interpreter::isTruthy(const std::any& object) const {
+if (!object.has_value()) {
+    return false;
+}
+
+auto& object_type = object.type();
+if (object_type == typeid(nullptr)) {
+    return false;
+} 
+if (object_type == typeid(bool)) {
+    return std::any_cast<bool>(object);
+}
+return true;
+}
+
+bool Interpreter::isEqual(const std::any& left,const std::any& right) const {
+    if (!left.has_value() && !right.has_value()) {
+        return true;
+    }
+    if (!left.has_value()) {
+        return false;
+    }
+
+    auto& left_type = left.type();
+    auto& right_type = right.type();
+
+    if (left_type == right_type) {
+        if (left_type == typeid(std::string)) {
+           return std::any_cast<std::string>(left) ==  std::any_cast<std::string>(right);
+        }
+        if (left_type == typeid(double)) {
+           return std::any_cast<double>(left) ==  std::any_cast<double>(right);
+        }
+        return false;
+    }
+    return false;
+}
+
+
+}  // namespace lang
+}  // namespace lox
