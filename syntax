@@ -1,6 +1,10 @@
+program -> statement* EOF;
+statement -> exprStatement 
+           | printStatement; 
+exprStatement -> expression ";"
+printStatement -> "print" expression;
+expression -> block | equality | condition ;
 block -> expression (, expression)*;
-expression -> equality | condition ;
-
 equality -> comparison ( ("!=" | "==") comparison)*;
 comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
 term -> factor ( ("-" | "+") factor)*;

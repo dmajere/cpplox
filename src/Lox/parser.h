@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "expression.h"
+#include "statement.h"
 #include "lox.h"
 #include "token.h"
 
@@ -19,15 +20,34 @@ class Parser {
 
   Parser(std::vector<Token> tokens) : tokens_(tokens), current_(0) {}
 
-  std::shared_ptr<Expression> parse() {
-    try {
-      return block();
-    } catch (ParseError& e) {
-      return nullptr;
+  std::vector<std::shared_ptr<Statement>> parse() {
+    std::vector<std::shared_ptr<Statement>> statements;
+    while (!isAtEnd()) {
+      statements.push_back(statement());
     }
+    return statements;
   }
 
  private:
+  std::shared_ptr<Statement> statement() {
+    if (match({TT::PRINT})) {
+      return printStatement();
+    }
+    return expressionStatement();
+  }
+
+  std::shared_ptr<Statement> printStatement() {
+    auto value = block();
+    consume(TT::SEMICOLON, "Expect ';' after expression.");
+    return std::make_shared<Print>(std::move(value));
+  }
+
+  std::shared_ptr<Statement> expressionStatement() {
+    auto expr = block();
+    consume(TT::SEMICOLON, "Expect ';' after expression.");
+    return std::make_shared<StatementExpression>(std::move(expr));
+  }
+
   std::shared_ptr<Expression> block() {
     auto expr = expression();
     if (check(TT::COMMA)) {

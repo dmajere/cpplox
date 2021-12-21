@@ -13,6 +13,12 @@ std::string AstPrinter::print(std::shared_ptr<Expression> expr) {
   }
   return "";
 }
+std::string AstPrinter::print(std::shared_ptr<Statement> stmt) {
+  if (stmt) {
+    return std::any_cast<std::string>(stmt->accept(this));
+  }
+  return "";
+}
 
 std::any AstPrinter::visit(std::shared_ptr<const Binary> binary) {
   std::stringstream ss;
@@ -41,7 +47,7 @@ std::any AstPrinter::visit(std::shared_ptr<const Literal> literal) {
   if (value_type == typeid(nullptr)) {
     return std::string{"nil"};
   } else if (value_type == typeid(std::string)) {
-    return std::any_cast<std::string>(literal->value);
+    return "\"" + std::any_cast<std::string>(literal->value) + "\"";
   } else if (value_type == typeid(double)) {
     return std::to_string(std::any_cast<double>(literal->value));
   } else if (value_type == typeid(bool)) {
@@ -72,6 +78,22 @@ std::any AstPrinter::visit(std::shared_ptr<const Condition> condition) {
        << std::any_cast<std::string>(condition->alternative->accept(this));
   }
   ss << " )";
+  return ss.str();
+}
+
+std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
+  std::stringstream ss;
+  ss << "("
+     << std::any_cast<std::string>(stmt->expression->accept(this))
+     << ")";
+  return ss.str();
+}
+
+std::any AstPrinter::visit(std::shared_ptr<const Print> stmt) {
+  std::stringstream ss;
+  ss << "(print "
+     << std::any_cast<std::string>(stmt->expression->accept(this))
+     << ")";
   return ss.str();
 }
 

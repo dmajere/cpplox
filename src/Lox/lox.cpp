@@ -49,21 +49,16 @@ void Lox::run(const std::string& source) {
   }
 
   auto parser = lox::parser::Parser(tokens);
-  auto expr = parser.parse();
+  auto statements = parser.parse();
+  std::cout << "statements parsed " << statements.size() << "\n";
 
-  if (expr) {
-    auto printer = lox::parser::AstPrinter();
+  auto printer = lox::parser::AstPrinter();
+  for (const auto& stmt : statements) {
     //TODO if debug
-    std::cout << "AST: " << printer.print(expr) << "\n";
-
-    auto interpreter = lox::lang::Interpreter();
-    try {
-      auto result = interpreter.evaluate(expr);
-      std::cout << kLoxOutputPrompt << lox::lang::Interpreter::toString(result);  
-    } catch (lox::lang::Interpreter::RuntimeError& e) {
-      runtime_error(e);
-    }
+    std::cout << "AST: " << printer.print(stmt) << "\n";
   }
+  auto interpreter = lox::lang::Interpreter();
+  interpreter.evaluate(statements);
 }
 
 

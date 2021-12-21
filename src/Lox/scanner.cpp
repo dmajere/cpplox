@@ -194,7 +194,7 @@ const char Scanner::peek() const {
   return isAtTheEnd() ? 0 : source_[current_pos_];
 }
 
-void Scanner::advance() { !isAtTheEnd() && current_pos_++; }
+void Scanner::advance() { if(!isAtTheEnd()) current_pos_++; }
 
 bool Scanner::match(const char& c) {
   bool result = isAtTheEnd() ? false : peek() == c;

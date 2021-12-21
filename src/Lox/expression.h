@@ -32,7 +32,7 @@ class AstVisitor {
 
 struct Expression {
   virtual std::any accept(AstVisitor* visitor) const = 0;
-  virtual ~Expression(){};
+  virtual ~Expression() = default;
 };
 
 struct Binary : Expression, public std::enable_shared_from_this<Binary> {

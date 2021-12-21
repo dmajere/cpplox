@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "lox.h"
 
 namespace lox {
 namespace lang {
@@ -103,10 +104,35 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Condition> condit
     return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::StatementExpression> stmt) {
+    evaluate(stmt->expression);
+    return nullptr;
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Print> stmt) {
+    std::cout << toString(evaluate(stmt->expression));
+    return nullptr;
+}
 
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
     return expr->accept(this);
 }
+std::any Interpreter::evaluate(std::vector<std::shared_ptr<lox::parser::Statement>> stmt) {
+    for (auto& s : stmt) {
+        try {
+            execute(s);
+        } catch (RuntimeError& error) {
+            lox::lang::Lox::runtime_error(error);
+        }
+
+    }
+    return nullptr;
+}
+
+void Interpreter::execute(std::shared_ptr<lox::parser::Statement>& stmt) {
+    stmt->accept(this);
+}
+
 bool Interpreter::isTruthy(const std::any& object) const {
 if (!object.has_value()) {
     return false;
