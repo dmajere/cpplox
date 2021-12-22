@@ -11,6 +11,7 @@ struct StatementExpression;
 struct Print;
 struct Var;
 struct Block;
+struct If;
 
 class StatementVisitor {
  public:
@@ -18,6 +19,7 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const Print> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Var> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Block> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const If> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 
@@ -71,6 +73,30 @@ struct Block : Statement, public std::enable_shared_from_this<Block> {
   }
   const std::vector<std::shared_ptr<Statement>> statements;
 };
+
+struct If : public Statement, std::enable_shared_from_this<If> {
+  If(const std::shared_ptr<Expression>& predicate,
+            const std::shared_ptr<Statement>& then)
+      : predicate(std::move(predicate)),
+        then(std::move(then)),
+        alternative(nullptr) {}
+
+  If(const std::shared_ptr<Expression>& predicate,
+            const std::shared_ptr<Statement>& then,
+            const std::shared_ptr<Statement>& alternative)
+      : predicate(std::move(predicate)),
+        then(std::move(then)),
+        alternative(std::move(alternative)) {}
+
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const std::shared_ptr<Expression> predicate;
+  const std::shared_ptr<Statement> then;
+  const std::shared_ptr<Statement> alternative;
+};
+
 
 }  // namespace parser
 }  // namespace lox

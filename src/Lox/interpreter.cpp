@@ -100,12 +100,11 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Sequence> expr) {
 }
 
 std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Condition> expr) {
+    std::shared_ptr<const lox::parser::Ternary> expr) {
   auto predicate = evaluate(expr->predicate);
   if (isTruthy(predicate)) {
     return evaluate(expr->then);
-  }
-  if (expr->alternative) {
+  } else if (expr->alternative) {
     return evaluate(expr->alternative);
   }
   return nullptr;
@@ -144,6 +143,15 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::If> stmt) {
+  if (isTruthy(evaluate(stmt->predicate))) {
+    execute(stmt->then);
+  } else if (stmt->alternative) {
+    execute(stmt->alternative);
+  }
+  return nullptr;
+}
+
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
   return expr->accept(this);
 }
@@ -161,7 +169,7 @@ std::any Interpreter::evaluate(
   return nullptr;
 }
 
-void Interpreter::execute(std::shared_ptr<lox::parser::Statement>& stmt) {
+void Interpreter::execute(const std::shared_ptr<lox::parser::Statement>& stmt) {
   stmt->accept(this);
 }
 

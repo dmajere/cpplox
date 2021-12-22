@@ -18,7 +18,7 @@ struct Unary;
 struct Literal;
 struct Variable;
 struct Sequence;
-struct Condition;
+struct Ternary;
 struct Assignment;
 
 class AstVisitor {
@@ -29,7 +29,7 @@ class AstVisitor {
   virtual std::any visit(std::shared_ptr<const Literal> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Variable> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Sequence> expr) = 0;
-  virtual std::any visit(std::shared_ptr<const Condition> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Ternary> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Assignment> expr) = 0;
   virtual ~AstVisitor() = default;
 };
@@ -106,20 +106,20 @@ struct Sequence : public Expression, std::enable_shared_from_this<Sequence> {
   std::vector<const std::shared_ptr<Expression>> expressions;
 };
 
-struct Condition : public Expression, std::enable_shared_from_this<Condition> {
-  Condition(const std::shared_ptr<Expression>& predicate,
+struct Ternary : public Expression, std::enable_shared_from_this<Ternary> {
+  Ternary(const std::shared_ptr<Expression>& predicate,
             const std::shared_ptr<Expression>& then)
       : predicate(std::move(predicate)),
         then(std::move(then)),
         alternative(nullptr) {}
 
-  Condition(const std::shared_ptr<Expression>& predicate,
+  Ternary(const std::shared_ptr<Expression>& predicate,
             const std::shared_ptr<Expression>& then,
             const std::shared_ptr<Expression>& alternative)
       : predicate(std::move(predicate)),
         then(std::move(then)),
         alternative(std::move(alternative)) {}
-  ~Condition() {}
+  ~Ternary() {}
 
   std::any accept(AstVisitor* visitor) const override {
     return visitor->visit(shared_from_this());

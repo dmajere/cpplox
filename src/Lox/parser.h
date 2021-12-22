@@ -55,6 +55,9 @@ class Parser {
     if (match({TT::PRINT})) {
       return printStatement();
     }
+    if (match({TT::IF})) {
+      return ifStatement();
+    }
     if (match({TT::LEFT_BRACE})) {
       return std::make_shared<Block>(block());
     }
@@ -80,6 +83,17 @@ class Parser {
     }
     consume(TT::RIGHT_BRACE, "Expect '}' after block.");
     return result;
+  }
+
+  std::shared_ptr<Statement> ifStatement() {
+    consume(TT::LEFT_PAREN, "Expect '}' after block.");
+    auto condition = sequence();
+    consume(TT::RIGHT_PAREN, "Expect ')' after if condition expression."); 
+    auto then = statement();
+    if (match({TT::ELSE})) {
+      return std::make_shared<If>(std::move(condition), std::move(then), statement());
+    }
+    return std::make_shared<If>(std::move(condition), std::move(then));
   }
 
   std::shared_ptr<Expression> sequence() {
@@ -120,10 +134,10 @@ class Parser {
   std::shared_ptr<Expression> ternary(std::shared_ptr<Expression> predicate) {
     auto then = expression();
     if (match({TT::COLON})) {
-      return std::make_shared<Condition>(std::move(predicate), std::move(then),
+      return std::make_shared<Ternary>(std::move(predicate), std::move(then),
                                          expression());
     }
-    return std::make_shared<Condition>(std::move(predicate), std::move(then));
+    return std::make_shared<Ternary>(std::move(predicate), std::move(then));
   }
 
   std::shared_ptr<Expression> equality() {

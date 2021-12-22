@@ -70,12 +70,12 @@ std::any AstPrinter::visit(std::shared_ptr<const Sequence> expr) {
   return ss.str();
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Condition> expr) {
+std::any AstPrinter::visit(std::shared_ptr<const Ternary> expr) {
   std::stringstream ss;
-  ss << "(if (" << std::any_cast<std::string>(expr->predicate->accept(this))
+  ss << "(? (" << std::any_cast<std::string>(expr->predicate->accept(this))
      << ") " << std::any_cast<std::string>(expr->then->accept(this));
   if (expr->alternative) {
-    ss << " else "
+    ss << " : "
        << std::any_cast<std::string>(expr->alternative->accept(this));
   }
   ss << " )";
@@ -120,6 +120,18 @@ std::any AstPrinter::visit(std::shared_ptr<const Block> stmt) {
     ss << std::any_cast<std::string>(s->accept(this)) << "\n";
   }
   ss << "}";
+  return ss.str();
+}
+
+std::any AstPrinter::visit(std::shared_ptr<const If> stmt) {
+  std::stringstream ss;
+  ss << "(if (" << std::any_cast<std::string>(stmt->predicate->accept(this))
+     << ") " << std::any_cast<std::string>(stmt->then->accept(this));
+  if (stmt->alternative) {
+    ss << " else "
+       << std::any_cast<std::string>(stmt->alternative->accept(this));
+  }
+  ss << " )";
   return ss.str();
 }
 
