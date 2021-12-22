@@ -20,6 +20,14 @@ class Environment {
     values_.insert({name, value});
   }
 
+  void assign(const lox::parser::Token& name, std::any& value) {
+    auto it = values_.find(name.lexeme);
+    if (it == values_.end()) {
+      throw RuntimeError(name, "Assinment to unbound variable '" + name.lexeme + "'.");
+    }
+    it->second = value;
+  }
+
   std::any get(const lox::parser::Token& name) const {
     auto it = values_.find(name.lexeme);
     if (it == values_.end()) {

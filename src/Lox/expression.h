@@ -19,16 +19,18 @@ struct Literal;
 struct Variable;
 struct Block;
 struct Condition;
+struct Assignment;
 
 class AstVisitor {
  public:
-  virtual std::any visit(std::shared_ptr<const Binary> binary) = 0;
-  virtual std::any visit(std::shared_ptr<const Grouping> grouping) = 0;
-  virtual std::any visit(std::shared_ptr<const Unary> unary) = 0;
-  virtual std::any visit(std::shared_ptr<const Literal> literal) = 0;
-  virtual std::any visit(std::shared_ptr<const Variable> var) = 0;
-  virtual std::any visit(std::shared_ptr<const Block> block) = 0;
-  virtual std::any visit(std::shared_ptr<const Condition> condition) = 0;
+  virtual std::any visit(std::shared_ptr<const Binary> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Grouping> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Unary> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Literal> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Variable> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Block> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Condition> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Assignment> expr) = 0;
   virtual ~AstVisitor() = default;
 };
 
@@ -126,6 +128,18 @@ struct Condition : public Expression, std::enable_shared_from_this<Condition> {
   const std::shared_ptr<Expression> predicate;
   const std::shared_ptr<Expression> then;
   const std::shared_ptr<Expression> alternative;
+};
+
+struct Assignment : Expression, public std::enable_shared_from_this<Assignment> {
+  Assignment(const Token& token, std::shared_ptr<Expression> target)
+    : token(token), target(std::move(target)) {}
+
+    std::any accept(AstVisitor* visitor) const override {
+      return visitor->visit(shared_from_this());
+    }
+
+    const Token token;
+    const std::shared_ptr<Expression> target;
 };
 
 }  // namespace parser

@@ -5,7 +5,8 @@ statement -> exprStatement
            | printStatement; 
 exprStatement -> expression ";"
 printStatement -> "print" expression;
-expression -> block | equality | condition ;
+expression -> assignment;
+assignment -> IDENTIFIER "=" assignment | block | equality | condition ;
 block -> expression (, expression)*;
 equality -> comparison ( ("!=" | "==") comparison)*;
 comparison -> term ( (">" | ">=" | "<" | "=<") term)*;

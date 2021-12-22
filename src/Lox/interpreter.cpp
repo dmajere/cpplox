@@ -7,55 +7,55 @@ namespace lox {
 namespace lang {
 
 std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Literal> literal) {
-  return literal->value;
+    std::shared_ptr<const lox::parser::Literal> expr) {
+  return expr->value;
 }
 std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Grouping> grouping) {
-  return evaluate(grouping->expression);
+    std::shared_ptr<const lox::parser::Grouping> expr) {
+  return evaluate(expr->expression);
 }
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> unary) {
-  auto right = evaluate(unary->right);
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> expr) {
+  auto right = evaluate(expr->right);
 
-  switch (unary->op.type) {
+  switch (expr->op.type) {
     case lox::parser::Token::TokenType::MINUS:
-      checkNumberOperand(unary->op, right);
+      checkNumberOperand(expr->op, right);
       return -(std::any_cast<double>(right));
     case lox::parser::Token::TokenType::BANG:
       return isTruthy(right);
     case lox::parser::Token::TokenType::MINUS_MINUS:
-      checkNumberOperand(unary->op, right);
+      checkNumberOperand(expr->op, right);
       return std::any_cast<double>(right) - 1;
     case lox::parser::Token::TokenType::PLUS_PLUS:
-      checkNumberOperand(unary->op, right);
+      checkNumberOperand(expr->op, right);
       return std::any_cast<double>(right) + 1;
     default:
       return nullptr;
   }
 }
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> binary) {
-  auto left = evaluate(binary->left);
-  auto right = evaluate(binary->right);
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> expr) {
+  auto left = evaluate(expr->left);
+  auto right = evaluate(expr->right);
   auto& left_type = left.type();
   auto& right_type = right.type();
   // TODO: type comprehension
 
-  switch (binary->op.type) {
+  switch (expr->op.type) {
     case lox::parser::Token::TokenType::BANG_EQUAL:
       return !isEqual(left, right);
     case lox::parser::Token::TokenType::EQUAL_EQUAL:
       return isEqual(left, right);
     case lox::parser::Token::TokenType::GREATER:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       return std::any_cast<double&>(left) > std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::GREATER_EQUAL:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       return std::any_cast<double&>(left) >= std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::LESS:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       return std::any_cast<double&>(left) < std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::LESS_EQUAL:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       return std::any_cast<double&>(left) <= std::any_cast<double&>(right);
     case lox::parser::Token::TokenType::PLUS:
       if (left_type == typeid(double) && right_type == typeid(double)) {
@@ -70,18 +70,18 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> binary) {
           right_type == typeid(std::string)) {
         return toString(left) + toString(right);
       }
-      throw RuntimeError(binary->op,
+      throw RuntimeError(expr->op,
                          "Operands must be either numbers or strings.");
     case lox::parser::Token::TokenType::MINUS:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       return std::any_cast<double>(left) - std::any_cast<double>(right);
     case lox::parser::Token::TokenType::STAR:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       return std::any_cast<double>(left) * std::any_cast<double>(right);
     case lox::parser::Token::TokenType::SLASH:
-      checkNumberOperands(binary->op, left, right);
+      checkNumberOperands(expr->op, left, right);
       if (std::any_cast<double>(right) == 0) {
-        throw ZeroDivision(binary->op, "Second operand must be non-zero.");
+        throw ZeroDivision(expr->op, "Second operand must be non-zero.");
       }
       return std::any_cast<double>(left) / std::any_cast<double>(right);
     default:
@@ -91,26 +91,36 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> binary) {
   return nullptr;
 }
 
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> block) {
-  for (int i = 0; i < block->expressions.size(); i++) {
-    if (i == block->expressions.size() - 1) {
-      return evaluate(block->expressions[i]);
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> expr) {
+  for (int i = 0; i < expr->expressions.size(); i++) {
+    if (i == expr->expressions.size() - 1) {
+      return evaluate(expr->expressions[i]);
     }
-    evaluate(block->expressions[i]);
+    evaluate(expr->expressions[i]);
   }
   return nullptr;
 }
 
 std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Condition> condition) {
-  auto predicate = evaluate(condition->predicate);
+    std::shared_ptr<const lox::parser::Condition> expr) {
+  auto predicate = evaluate(expr->predicate);
   if (isTruthy(predicate)) {
-    return evaluate(condition->then);
+    return evaluate(expr->then);
   }
-  if (condition->alternative) {
-    return evaluate(condition->alternative);
+  if (expr->alternative) {
+    return evaluate(expr->alternative);
   }
   return nullptr;
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Variable> expr) {
+  return env_->get(expr->token);
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Assignment> expr) {
+    auto value = evaluate(expr->target);
+    env_->assign(expr->token, value);
+    return nullptr;
 }
 
 std::any Interpreter::visit(
@@ -124,14 +134,12 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Print> stmt) {
   return nullptr;
 }
 
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::Variable> var) {
-  return env_->get(var->token);
-}
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Var> stmt) {
   std::any value = stmt->initializer ? evaluate(stmt->initializer) : nullptr;
   env_->define(stmt->token.lexeme, value);
   return nullptr;
 }
+
 
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
   return expr->accept(this);

@@ -29,6 +29,7 @@ void Lox::runFromFile(const std::string& path) {
 
 void Lox::runPrompt() {
   auto interpreter = lox::lang::Interpreter();
+  auto printer = lox::parser::AstPrinter();
 
   for (std::string line;; std::getline(std::cin, line)) {
     if (std::cin.fail()) {
@@ -37,8 +38,15 @@ void Lox::runPrompt() {
     if (!line.empty()) {
       auto scanner = lox::parser::Scanner(line);
       auto tokens = scanner.scanTokens();
+      for (const auto& tok : tokens) {
+        std::cout << "Token: " << tok << "\n";
+      }
       auto parser = lox::parser::Parser(tokens);
       auto statements = parser.parse();
+      for (const auto& stmt : statements) {
+        std::cout << "Statement: " << printer.print(stmt) << "\n";
+      }
+
       interpreter.evaluate(statements);
 
       std::cout << "\n";
@@ -48,7 +56,6 @@ void Lox::runPrompt() {
 }
 
 void Lox::run(const std::string& source) {
-  auto printer = lox::parser::AstPrinter();
 }
 
 }  // namespace lang

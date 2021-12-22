@@ -84,9 +84,22 @@ class Parser {
     return expr;
   }
 
-  std::shared_ptr<Expression> expression(bool inBlockStatement = false) {
+  std::shared_ptr<Expression> expression() {
+    return assignment();
+  }
+
+  std::shared_ptr<Expression> assignment() {
     auto expr = equality();
 
+    if (match({TT::EQUAL})) {
+      Token equals = previous();
+      auto value = assignment();
+      if (Variable* e = dynamic_cast<Variable*>(expr.get())) {
+        Token name = e->token;
+        return std::make_shared<Assignment>(std::move(name), std::move(value));
+      }
+      error(equals, "Invalid assignment target.");
+    }
     if (match({TT::QUESTION})) {
       return ternary(std::move(expr));
     }
@@ -188,9 +201,8 @@ class Parser {
       consume(TT::RIGHT_PAREN, "Expect ')' after expression.");
       return std::make_shared<Grouping>(std::move(expr));
     }
-
-    lox::lang::Lox::error(peek(), "Expect expresion");
-    throw ParseError("Expect expression");
+    error(peek(), "Expect expresion");
+    return nullptr;
   }
 
   bool match(const std::vector<Token::TokenType>& types) {
@@ -201,9 +213,10 @@ class Parser {
     return false;
   }
   const Token& consume(Token::TokenType type, const std::string& message) {
-    if (check(type)) return advance();
-    lox::lang::Lox::error(peek(), message);
-    throw ParseError(message);
+    if (!check(type)) {
+      error(peek(), message);
+    }
+    return advance();
   }
 
   bool check(const Token::TokenType& type) const {
@@ -229,8 +242,6 @@ class Parser {
 
   const Token& previous() const { return tokens_[current_ - 1]; }
 
-  void error(const Token& token, const std::string& message) {}
-
   void synchronize() {
     advance();
     while (!isAtEnd()) {
@@ -249,6 +260,11 @@ class Parser {
           advance();
       }
     }
+  }
+
+  void error(const Token& token, const std::string& message) {
+    lox::lang::Lox::error(token, message);
+    throw ParseError(message);
   }
 
   std::vector<Token> tokens_;

@@ -20,69 +20,77 @@ std::string AstPrinter::print(std::shared_ptr<Statement> stmt) {
   return "";
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Binary> binary) {
+std::any AstPrinter::visit(std::shared_ptr<const Binary> expr) {
   std::stringstream ss;
-  ss << "( " << binary->op.lexeme << " "
-     << std::any_cast<std::string>(binary->left->accept(this)) << " "
-     << std::any_cast<std::string>(binary->right->accept(this)) << " )";
+  ss << "( " << expr->op.lexeme << " "
+     << std::any_cast<std::string>(expr->left->accept(this)) << " "
+     << std::any_cast<std::string>(expr->right->accept(this)) << " )";
   return ss.str();
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Grouping> grouping) {
+std::any AstPrinter::visit(std::shared_ptr<const Grouping> expr) {
   std::stringstream ss;
-  ss << "( " << std::any_cast<std::string>(grouping->expression->accept(this))
+  ss << "( " << std::any_cast<std::string>(expr->expression->accept(this))
      << " )";
   return ss.str();
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Unary> unary) {
+std::any AstPrinter::visit(std::shared_ptr<const Unary> expr) {
   std::stringstream ss;
-  ss << "( " << unary->op.lexeme << " "
-     << std::any_cast<std::string>(unary->right->accept(this)) << " )";
+  ss << "( " << expr->op.lexeme << " "
+     << std::any_cast<std::string>(expr->right->accept(this)) << " )";
   return ss.str();
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Literal> literal) {
-  auto& value_type = literal->value.type();
+std::any AstPrinter::visit(std::shared_ptr<const Literal> expr) {
+  auto& value_type = expr->value.type();
   if (value_type == typeid(nullptr)) {
     return std::string{"nil"};
   } else if (value_type == typeid(std::string)) {
-    return "\"" + std::any_cast<std::string>(literal->value) + "\"";
+    return "\"" + std::any_cast<std::string>(expr->value) + "\"";
   } else if (value_type == typeid(double)) {
-    return std::to_string(std::any_cast<double>(literal->value));
+    return std::to_string(std::any_cast<double>(expr->value));
   } else if (value_type == typeid(bool)) {
-    return std::string{std::any_cast<bool>(literal->value) ? "true" : "false"};
+    return std::string{std::any_cast<bool>(expr->value) ? "true" : "false"};
   }
   return "";
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Variable> var) {
-  return var->token.lexeme;
+std::any AstPrinter::visit(std::shared_ptr<const Variable> expr) {
+  return expr->token.lexeme;
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Block> block) {
+std::any AstPrinter::visit(std::shared_ptr<const Block> expr) {
   std::stringstream ss;
   ss << "( ";
-  // for (int i = 0; i <= block->expressions.size(); i++) {
-  for (auto& expr : block->expressions) {
-    // ss << std::any_cast<std::string>(block->expressions[i]->accept(this))
+  for (auto& expr : expr->expressions) {
     ss << std::any_cast<std::string>(expr->accept(this)) << ", ";
   }
   ss << ")";
   return ss.str();
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Condition> condition) {
+std::any AstPrinter::visit(std::shared_ptr<const Condition> expr) {
   std::stringstream ss;
   ss << "(if ("
-     << std::any_cast<std::string>(condition->predicate->accept(this)) << ") "
-     << std::any_cast<std::string>(condition->then->accept(this));
-  if (condition->alternative) {
+     << std::any_cast<std::string>(expr->predicate->accept(this)) << ") "
+     << std::any_cast<std::string>(expr->then->accept(this));
+  if (expr->alternative) {
     ss << " else "
-       << std::any_cast<std::string>(condition->alternative->accept(this));
+       << std::any_cast<std::string>(expr->alternative->accept(this));
   }
   ss << " )";
   return ss.str();
+}
+
+std::any AstPrinter::visit(std::shared_ptr<const Assignment> expr) {
+  std::stringstream ss;
+  ss << "(assign " 
+     << expr->token.lexeme
+     << " " 
+     << std::any_cast<std::string>(expr->target->accept(this))
+     << ")";
+     return ss.str();
 }
 
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
@@ -101,13 +109,14 @@ std::any AstPrinter::visit(std::shared_ptr<const Print> stmt) {
 
 std::any AstPrinter::visit(std::shared_ptr<const Var> stmt) {
   std::stringstream ss;
-  ss << "(var " << stmt->token.lexeme;
+  ss << "(define " << stmt->token.lexeme;
   if (stmt->initializer) {
     ss << " = " << std::any_cast<std::string>(stmt->initializer->accept(this));
   }
   ss << ")";
   return ss.str();
 }
+
 
 }  // namespace parser
 }  // namespace lox

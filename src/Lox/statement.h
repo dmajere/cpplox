@@ -60,5 +60,7 @@ struct Var : Statement, public std::enable_shared_from_this<Var> {
   const std::shared_ptr<Expression> initializer;
 };
 
+
+
 }  // namespace parser
 }  // namespace lox
