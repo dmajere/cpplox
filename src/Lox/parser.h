@@ -170,15 +170,37 @@ class Parser {
   std::shared_ptr<Expression> assignment() {
     auto expr = logical_or();
 
-    if (match({TT::EQUAL})) {
-      // TODO: implement +=, -=, *=, /= by wraping value expr with Binary
-      Token equals = previous();
+    if (match({TT::EQUAL, TT::PLUS_EQUAL, TT::MINUS_EQUAL, TT::STAR_EQUAL, TT::SLASH_EQUAL})) {
+      Token equal = previous();
       auto value = assignment();
+
+      if (equal.type != TT::EQUAL) {
+        Token::TokenType type;
+        switch (equal.type)
+        {
+        case TT::PLUS_EQUAL:
+          type = TT::PLUS;
+          break;
+        case TT::MINUS_EQUAL:
+          type = TT::MINUS;
+          break;
+        case TT::STAR_EQUAL:
+          type = TT::STAR;
+          break;
+        case TT::SLASH_EQUAL:
+          type = TT::SLASH;
+          break;
+        default:
+          error(equal, "Expected valid assignment token.");
+        }
+        value = std::make_shared<Binary>(expr, Token(type, equal.line), std::make_shared<Literal>(1.0));
+      }
+
       if (Variable* e = dynamic_cast<Variable*>(expr.get())) {
         Token name = e->token;
         return std::make_shared<Assignment>(std::move(name), std::move(value));
       }
-      error(equals, "Invalid assignment target.");
+      error(equal, "Invalid assignment target.");
     }
     if (match({TT::QUESTION})) {
       return ternary(std::move(expr));
