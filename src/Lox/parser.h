@@ -61,6 +61,9 @@ class Parser {
     if (match({TT::WHILE})) {
       return whileStatement();
     }
+    if (match({TT::FOR})) {
+      return forStatement();
+    }
     if (match({TT::LEFT_BRACE})) {
       return std::make_shared<Block>(block());
     }
@@ -91,10 +94,11 @@ class Parser {
   std::shared_ptr<Statement> ifStatement() {
     consume(TT::LEFT_PAREN, "Expect '(' after if statement.");
     auto condition = sequence();
-    consume(TT::RIGHT_PAREN, "Expect ')' after if condition expression."); 
+    consume(TT::RIGHT_PAREN, "Expect ')' after if condition expression.");
     auto then = statement();
     if (match({TT::ELSE})) {
-      return std::make_shared<If>(std::move(condition), std::move(then), statement());
+      return std::make_shared<If>(std::move(condition), std::move(then),
+                                  statement());
     }
     return std::make_shared<If>(std::move(condition), std::move(then));
   }
@@ -104,6 +108,47 @@ class Parser {
     auto condition = sequence();
     consume(TT::RIGHT_PAREN, "Expect ')' after while condition expression.");
     return std::make_shared<While>(std::move(condition), statement());
+  }
+
+  std::shared_ptr<Statement> forStatement() {
+    consume(TT::LEFT_PAREN, "Expect '(' after for statement.");
+
+    std::shared_ptr<Statement> initializer;
+    if (match({TT::SEMICOLON})) {
+      initializer = nullptr;
+    } else if (match({TT::VAR})) {
+      initializer = varDeclaration();
+    } else {
+      initializer = expressionStatement();
+    }
+
+    std::shared_ptr<Expression> condition = nullptr;
+    if (!check({TT::SEMICOLON})) {
+      condition = sequence();
+    } else {
+      condition = std::make_shared<Literal>(true);
+    }
+    consume(TT::SEMICOLON, "Expect ';' after condition in for.");
+
+    std::shared_ptr<Expression> increment = nullptr;
+    if (!check({TT::RIGHT_PAREN})) {
+      increment = sequence();
+    }
+    consume(TT::RIGHT_PAREN, "Expect ';' after condition in for.");
+
+    auto body = statement();
+    if (increment) {
+      body = std::make_shared<Block>(std::vector<std::shared_ptr<Statement>>{
+          std::move(body), std::make_shared<StatementExpression>(std::move(increment))});
+    }
+    body = std::make_shared<While>(std::move(condition), std::move(body));
+
+    if (initializer) {
+      body = std::make_shared<Block>(std::vector<std::shared_ptr<Statement>>{
+        std::move(initializer), std::move(body)
+      });
+    }
+    return body;
   }
 
   std::shared_ptr<Expression> sequence() {
@@ -126,7 +171,7 @@ class Parser {
     auto expr = logical_or();
 
     if (match({TT::EQUAL})) {
-      //TODO: implement +=, -=, *=, /= by wraping value expr with Binary
+      // TODO: implement +=, -=, *=, /= by wraping value expr with Binary
       Token equals = previous();
       auto value = assignment();
       if (Variable* e = dynamic_cast<Variable*>(expr.get())) {
@@ -146,7 +191,7 @@ class Parser {
     auto then = expression();
     if (match({TT::COLON})) {
       return std::make_shared<Ternary>(std::move(predicate), std::move(then),
-                                         expression());
+                                       expression());
     }
     return std::make_shared<Ternary>(std::move(predicate), std::move(then));
   }

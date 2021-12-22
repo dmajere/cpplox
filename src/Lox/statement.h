@@ -78,14 +78,14 @@ struct Block : Statement, public std::enable_shared_from_this<Block> {
 
 struct If : public Statement, std::enable_shared_from_this<If> {
   If(const std::shared_ptr<Expression>& predicate,
-            const std::shared_ptr<Statement>& then)
+     const std::shared_ptr<Statement>& then)
       : predicate(std::move(predicate)),
         then(std::move(then)),
         alternative(nullptr) {}
 
   If(const std::shared_ptr<Expression>& predicate,
-            const std::shared_ptr<Statement>& then,
-            const std::shared_ptr<Statement>& alternative)
+     const std::shared_ptr<Statement>& then,
+     const std::shared_ptr<Statement>& alternative)
       : predicate(std::move(predicate)),
         then(std::move(then)),
         alternative(std::move(alternative)) {}
@@ -101,7 +101,8 @@ struct If : public Statement, std::enable_shared_from_this<If> {
 
 struct While : public Statement, std::enable_shared_from_this<While> {
   While(const std::shared_ptr<Expression>& condition,
-  const std::shared_ptr<Statement>& body) : condition(std::move(condition)), body(std::move(body)) {}
+        const std::shared_ptr<Statement>& body)
+      : condition(std::move(condition)), body(std::move(body)) {}
 
   std::any accept(StatementVisitor* visitor) override {
     return visitor->visit(shared_from_this());

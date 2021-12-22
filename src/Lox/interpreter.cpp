@@ -193,7 +193,9 @@ std::any Interpreter::evaluate(
 }
 
 void Interpreter::execute(const std::shared_ptr<lox::parser::Statement>& stmt) {
-  stmt->accept(this);
+  if (stmt) {
+    stmt->accept(this);
+  }
 }
 
 void Interpreter::executeBlock(std::shared_ptr<const lox::parser::Block>& block,
@@ -202,7 +204,9 @@ void Interpreter::executeBlock(std::shared_ptr<const lox::parser::Block>& block,
   try {
     this->env_ = env;
     for (auto stmt : block->statements) {
-      execute(stmt);
+      if (stmt) {
+        execute(stmt);
+      }
     }
 
   } catch (RuntimeError& error) {
