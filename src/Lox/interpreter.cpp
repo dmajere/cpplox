@@ -32,11 +32,27 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> expr) {
   }
 }
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> expr) {
+
   auto left = evaluate(expr->left);
+  switch (expr->op.type)
+  {
+    case lox::parser::Token::TokenType::AND:
+        if (isTruthy(left)) {
+            return isTruthy(evaluate(expr->right));
+        }
+        return false;
+    case lox::parser::Token::TokenType::OR:
+        if (isTruthy(left)) {
+            return true;
+        }
+        return isTruthy(evaluate(expr->right));
+  default:
+      break;
+  }
+
   auto right = evaluate(expr->right);
   auto& left_type = left.type();
   auto& right_type = right.type();
-  // TODO: type comprehension
 
   switch (expr->op.type) {
     case lox::parser::Token::TokenType::BANG_EQUAL:
@@ -200,6 +216,12 @@ bool Interpreter::isTruthy(const std::any& object) const {
   }
   if (object_type == typeid(bool)) {
     return std::any_cast<bool>(object);
+  }
+  if (object_type == typeid(double)) {
+      return std::any_cast<double>(object) != 0;
+  }
+  if (object_type == typeid(std::string)) {
+      return std::any_cast<std::string>(object) != "";
   }
   return true;
 }

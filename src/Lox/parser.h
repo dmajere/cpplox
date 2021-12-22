@@ -113,7 +113,7 @@ class Parser {
   std::shared_ptr<Expression> expression() { return assignment(); }
 
   std::shared_ptr<Expression> assignment() {
-    auto expr = equality();
+    auto expr = logical_or();
 
     if (match({TT::EQUAL})) {
       Token equals = previous();
@@ -138,6 +138,24 @@ class Parser {
                                          expression());
     }
     return std::make_shared<Ternary>(std::move(predicate), std::move(then));
+  }
+
+  std::shared_ptr<Expression> logical_or() {
+    auto expr = logical_and();
+    if (match({TT::OR})) {
+      Token op = previous();
+      expr = std::make_shared<Binary>(std::move(expr), op, logical_and());
+    }
+    return expr;
+  }
+
+  std::shared_ptr<Expression> logical_and() {
+    auto expr = equality();
+    if (match({TT::AND})) {
+      Token op = previous();
+      expr = std::make_shared<Binary>(std::move(expr), op, equality());
+    }
+    return expr;
   }
 
   std::shared_ptr<Expression> equality() {
