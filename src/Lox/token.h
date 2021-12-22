@@ -61,8 +61,8 @@ struct Token {
     TRUE,
     VAR,
     WHILE,
-    // TODO: implement break
-    // TODO: implement continue
+    BREAK,
+    CONTINUE,
     END,
   };
 

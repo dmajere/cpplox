@@ -16,6 +16,7 @@ const std::unordered_map<std::string, Token::TokenType> keywords = {
     {"return", Token::TokenType::RETURN}, {"super", Token::TokenType::SUPER},
     {"this", Token::TokenType::THIS},     {"true", Token::TokenType::TRUE},
     {"var", Token::TokenType::VAR},       {"while", Token::TokenType::WHILE},
+    {"break", Token::TokenType::BREAK},   {"continue", Token::TokenType::CONTINUE},
 };
 
 class Scanner {

@@ -29,12 +29,12 @@ class Parser {
   }
 
  private:
-  std::shared_ptr<Statement> declaration() {
+  std::shared_ptr<Statement> declaration(bool inLoop = false) {
     try {
       if (match({TT::VAR})) {
         return varDeclaration();
       }
-      return statement();
+      return statement(inLoop);
     } catch (ParseError& error) {
       synchronize();
       return nullptr;
@@ -51,12 +51,12 @@ class Parser {
     return std::make_shared<Var>(name, std::move(initializer));
   }
 
-  std::shared_ptr<Statement> statement() {
+  std::shared_ptr<Statement> statement(bool inLoop=false) {
     if (match({TT::PRINT})) {
       return printStatement();
     }
     if (match({TT::IF})) {
-      return ifStatement();
+      return ifStatement(inLoop);
     }
     if (match({TT::WHILE})) {
       return whileStatement();
@@ -64,8 +64,16 @@ class Parser {
     if (match({TT::FOR})) {
       return forStatement();
     }
+    if (match({TT::CONTINUE, TT::BREAK})) {
+      Token op = previous();
+      if (!inLoop) {
+        error(op, "Expect to be inside loop.");
+      }
+      consume(TT::SEMICOLON, "Expect ';' after expression.");
+      return std::make_shared<LoopControl>(op);
+    }
     if (match({TT::LEFT_BRACE})) {
-      return std::make_shared<Block>(block());
+      return std::make_shared<Block>(block(inLoop));
     }
     return expressionStatement();
   }
@@ -82,23 +90,23 @@ class Parser {
     return std::make_shared<StatementExpression>(std::move(expr));
   }
 
-  std::vector<std::shared_ptr<Statement>> block() {
+  std::vector<std::shared_ptr<Statement>> block(bool inLoop = false) {
     std::vector<std::shared_ptr<Statement>> result;
     while (!check(TT::RIGHT_BRACE) && !isAtEnd()) {
-      result.push_back(declaration());
+      result.push_back(declaration(inLoop));
     }
     consume(TT::RIGHT_BRACE, "Expect '}' after block.");
     return result;
   }
 
-  std::shared_ptr<Statement> ifStatement() {
+  std::shared_ptr<Statement> ifStatement(bool inLoop = false) {
     consume(TT::LEFT_PAREN, "Expect '(' after if statement.");
     auto condition = sequence();
     consume(TT::RIGHT_PAREN, "Expect ')' after if condition expression.");
-    auto then = statement();
+    auto then = statement(inLoop);
     if (match({TT::ELSE})) {
       return std::make_shared<If>(std::move(condition), std::move(then),
-                                  statement());
+                                  statement(inLoop));
     }
     return std::make_shared<If>(std::move(condition), std::move(then));
   }
@@ -107,7 +115,7 @@ class Parser {
     consume(TT::LEFT_PAREN, "Expect '(' after while statement.");
     auto condition = sequence();
     consume(TT::RIGHT_PAREN, "Expect ')' after while condition expression.");
-    return std::make_shared<While>(std::move(condition), statement());
+    return std::make_shared<While>(std::move(condition), statement(true));
   }
 
   std::shared_ptr<Statement> forStatement() {
@@ -136,7 +144,7 @@ class Parser {
     }
     consume(TT::RIGHT_PAREN, "Expect ';' after condition in for.");
 
-    auto body = statement();
+    auto body = statement(true);
     if (increment) {
       body = std::make_shared<Block>(std::vector<std::shared_ptr<Statement>>{
           std::move(body), std::make_shared<StatementExpression>(std::move(increment))});

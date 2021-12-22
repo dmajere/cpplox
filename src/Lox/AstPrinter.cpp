@@ -145,5 +145,9 @@ std::any AstPrinter::visit(std::shared_ptr<const While> stmt) {
   return ss.str();
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const LoopControl> stmt) {
+  return stmt->token.lexeme;
+}
+
 }  // namespace parser
 }  // namespace lox

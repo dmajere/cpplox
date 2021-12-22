@@ -11,10 +11,10 @@ exprStatement -> sequence ";"
 printStatement -> "print" sequence;
 block -> "{" declaration* "}";
 ifStatement -> "if" "(" sequence ")" statement ("else" statement)?;
-whileStatement -> "while" "(" sequence ")" statement;
+whileStatement -> "while" "(" sequence ")" statement | CONTINUE | BREAK;
 forStatement -> "for" "(" (varDeclaration | exprStatement | ";")
                           sequence? ";"
-                          sequence? ")" statement;
+                          sequence? ")" statement | CONTINUE | BREAK;
 
 sequence -> expression (, expression)*;
 expression -> assignment ;

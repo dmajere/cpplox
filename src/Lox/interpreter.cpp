@@ -170,9 +170,25 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::If> stmt) {
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::While> stmt) {
     while (isTruthy(evaluate(stmt->condition))) {
+      try {
         execute(stmt->body);
+      } catch(lox::parser::Continue&) {
+        continue;
+      } catch(lox::parser::Break&) {
+        break;
+      }
     }
     return nullptr;
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::LoopControl> stmt) {
+  if (stmt->token.type == lox::parser::Token::TokenType::BREAK) {
+    throw lox::parser::Break();
+  }
+  if (stmt->token.type == lox::parser::Token::TokenType::CONTINUE) {
+    throw lox::parser::Continue();
+  }
+  return nullptr;
 }
 
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
