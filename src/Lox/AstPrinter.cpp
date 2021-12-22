@@ -135,5 +135,15 @@ std::any AstPrinter::visit(std::shared_ptr<const If> stmt) {
   return ss.str();
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const While> stmt) {
+  std::stringstream ss;
+  ss << "(while ("
+     << std::any_cast<std::string>(stmt->condition->accept(this)) 
+     << ") {"
+     << std::any_cast<std::string>(stmt->body->accept(this)) 
+     << "}";
+  return ss.str();
+}
+
 }  // namespace parser
 }  // namespace lox

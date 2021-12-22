@@ -12,6 +12,7 @@ struct Print;
 struct Var;
 struct Block;
 struct If;
+struct While;
 
 class StatementVisitor {
  public:
@@ -20,6 +21,7 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const Var> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Block> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const If> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const While> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 
@@ -97,6 +99,16 @@ struct If : public Statement, std::enable_shared_from_this<If> {
   const std::shared_ptr<Statement> alternative;
 };
 
+struct While : public Statement, std::enable_shared_from_this<While> {
+  While(const std::shared_ptr<Expression>& condition,
+  const std::shared_ptr<Statement>& body) : condition(std::move(condition)), body(std::move(body)) {}
+
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+  const std::shared_ptr<Expression> condition;
+  const std::shared_ptr<Statement> body;
+};
 
 }  // namespace parser
 }  // namespace lox

@@ -2,6 +2,8 @@ program -> declaration* EOF;
 declaration -> varDeclaration | statement;
 varDeclaration -> "var" IDENTIFIER ( "=" sequence)? ";";
 statement -> exprStatement 
+           | whileStatement
+           | forStatement
            | ifStatement
            | block
            | printStatement; 
@@ -9,6 +11,8 @@ exprStatement -> sequence ";"
 printStatement -> "print" sequence;
 block -> "{" declaration* "}";
 ifStatement -> "if" "(" expression ")" statement ("else" statement)?;
+whileStatement -> "while" "(" expression ")" statement;
+forStatement
 
 sequence -> expression (, expression)*;
 expression -> assignment ;

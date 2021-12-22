@@ -168,6 +168,13 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::If> stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::While> stmt) {
+    while (isTruthy(evaluate(stmt->condition))) {
+        execute(stmt->body);
+    }
+    return nullptr;
+}
+
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
   return expr->accept(this);
 }

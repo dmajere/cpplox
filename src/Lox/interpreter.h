@@ -32,6 +32,7 @@ class Interpreter : public lox::parser::AstVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Var> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Block> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::If> stmt) override;
+  std::any visit(std::shared_ptr<const lox::parser::While> stmt) override;
 
   static std::string toString(const std::any& object) {
     auto& object_type = object.type();

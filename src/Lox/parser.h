@@ -58,6 +58,9 @@ class Parser {
     if (match({TT::IF})) {
       return ifStatement();
     }
+    if (match({TT::WHILE})) {
+      return whileStatement();
+    }
     if (match({TT::LEFT_BRACE})) {
       return std::make_shared<Block>(block());
     }
@@ -86,7 +89,7 @@ class Parser {
   }
 
   std::shared_ptr<Statement> ifStatement() {
-    consume(TT::LEFT_PAREN, "Expect '}' after block.");
+    consume(TT::LEFT_PAREN, "Expect '(' after if statement.");
     auto condition = sequence();
     consume(TT::RIGHT_PAREN, "Expect ')' after if condition expression."); 
     auto then = statement();
@@ -94,6 +97,13 @@ class Parser {
       return std::make_shared<If>(std::move(condition), std::move(then), statement());
     }
     return std::make_shared<If>(std::move(condition), std::move(then));
+  }
+
+  std::shared_ptr<Statement> whileStatement() {
+    consume(TT::LEFT_PAREN, "Expect '(' after while statement.");
+    auto condition = sequence();
+    consume(TT::RIGHT_PAREN, "Expect ')' after while condition expression.");
+    return std::make_shared<While>(std::move(condition), statement());
   }
 
   std::shared_ptr<Expression> sequence() {
@@ -116,6 +126,7 @@ class Parser {
     auto expr = logical_or();
 
     if (match({TT::EQUAL})) {
+      //TODO: implement +=, -=, *=, /= by wraping value expr with Binary
       Token equals = previous();
       auto value = assignment();
       if (Variable* e = dynamic_cast<Variable*>(expr.get())) {
@@ -225,7 +236,12 @@ class Parser {
       return std::make_shared<Literal>(nullptr);
     }
     if (match({TT::IDENTIFIER})) {
-      return std::make_shared<Variable>(previous());
+      auto identifier = std::make_shared<Variable>(previous());
+      if (match({TT::MINUS_MINUS, TT::PLUS_PLUS})) {
+        Token op = previous();
+        return std::make_shared<Unary>(op, std::move(identifier));
+      }
+      return identifier;
     }
     if (match({TT::NUMBER})) {
       auto number = std::make_shared<Literal>(atof(previous().lexeme.c_str()));

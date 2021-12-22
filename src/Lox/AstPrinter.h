@@ -26,6 +26,7 @@ class AstPrinter : public AstVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Var> stmt) override;
   std::any visit(std::shared_ptr<const Block> stmt) override;
   std::any visit(std::shared_ptr<const If> stmt) override;
+  std::any visit(std::shared_ptr<const While> stmt) override;
 };
 
 }  // namespace parser
