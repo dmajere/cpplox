@@ -3,8 +3,9 @@
 #include <iostream>
 #include <string>
 
-#include "token.h"
+#include "RuntimeError.h"
 #include "interpreter.h"
+#include "token.h"
 
 namespace lox {
 namespace lang {
@@ -26,7 +27,7 @@ class Lox {
     report(tok.line, " at token " + tok.lexeme, message);
   }
 
-  static void runtime_error(lox::lang::Interpreter::RuntimeError& error) {
+  static void runtime_error(lox::lang::RuntimeError& error) {
     report(error.token.line, "at token " + error.token.lexeme, error.what());
     hadRuntimeError = true;
   }
@@ -62,8 +63,6 @@ class Lox {
     }
     return "nil";
   }
-
-
 };
 
 }  // namespace lang

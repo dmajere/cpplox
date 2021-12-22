@@ -20,6 +20,8 @@ class AstPrinter : public AstVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Condition> condition) override;
   std::any visit(std::shared_ptr<const StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const Print> stmt) override;
+  std::any visit(std::shared_ptr<const Variable> var) override;
+  std::any visit(std::shared_ptr<const Var> stmt) override;
 };
 
 }  // namespace parser

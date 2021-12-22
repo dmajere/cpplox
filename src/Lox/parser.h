@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "expression.h"
-#include "statement.h"
 #include "lox.h"
+#include "statement.h"
 #include "token.h"
 
 using TT = lox::parser::Token::TokenType;
@@ -23,12 +23,34 @@ class Parser {
   std::vector<std::shared_ptr<Statement>> parse() {
     std::vector<std::shared_ptr<Statement>> statements;
     while (!isAtEnd()) {
-      statements.push_back(statement());
+      statements.push_back(declaration());
     }
     return statements;
   }
 
  private:
+  std::shared_ptr<Statement> declaration() {
+    try {
+      if (match({TT::VAR})) {
+        return varDeclaration();
+      }
+      return statement();
+    } catch (ParseError& error) {
+      synchronize();
+      return nullptr;
+    }
+  }
+
+  std::shared_ptr<Statement> varDeclaration() {
+    Token name = consume(TT::IDENTIFIER, "Expect variable name.");
+    std::shared_ptr<Expression> initializer = nullptr;
+    if (match({TT::EQUAL})) {
+      initializer = expression();
+    }
+    consume(TT::SEMICOLON, "Expect ';' after expression");
+    return std::make_shared<Var>(name, std::move(initializer));
+  }
+
   std::shared_ptr<Statement> statement() {
     if (match({TT::PRINT})) {
       return printStatement();
@@ -147,9 +169,11 @@ class Parser {
     if (match({TT::NIL})) {
       return std::make_shared<Literal>(nullptr);
     }
+    if (match({TT::IDENTIFIER})) {
+      return std::make_shared<Variable>(previous());
+    }
     if (match({TT::NUMBER})) {
-      auto number =
-          std::make_shared<Literal>(atof(previous().lexeme.c_str()));
+      auto number = std::make_shared<Literal>(atof(previous().lexeme.c_str()));
       if (match({TT::MINUS_MINUS, TT::PLUS_PLUS})) {
         Token op = previous();
         return std::make_shared<Unary>(op, std::move(number));

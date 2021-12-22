@@ -1,10 +1,10 @@
 #pragma once
 
 #include <any>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "token.h"
 
@@ -16,6 +16,7 @@ struct Binary;
 struct Grouping;
 struct Unary;
 struct Literal;
+struct Variable;
 struct Block;
 struct Condition;
 
@@ -25,6 +26,7 @@ class AstVisitor {
   virtual std::any visit(std::shared_ptr<const Grouping> grouping) = 0;
   virtual std::any visit(std::shared_ptr<const Unary> unary) = 0;
   virtual std::any visit(std::shared_ptr<const Literal> literal) = 0;
+  virtual std::any visit(std::shared_ptr<const Variable> var) = 0;
   virtual std::any visit(std::shared_ptr<const Block> block) = 0;
   virtual std::any visit(std::shared_ptr<const Condition> condition) = 0;
   virtual ~AstVisitor() = default;
@@ -51,7 +53,8 @@ struct Binary : Expression, public std::enable_shared_from_this<Binary> {
 };
 
 struct Grouping : public Expression, std::enable_shared_from_this<Grouping> {
-  Grouping(const std::shared_ptr<Expression>& exp) : expression(std::move(exp)) {}
+  Grouping(const std::shared_ptr<Expression>& exp)
+      : expression(std::move(exp)) {}
   ~Grouping() {}
   std::any accept(AstVisitor* visitor) const override {
     return visitor->visit(shared_from_this());
@@ -80,6 +83,15 @@ struct Literal : public Expression, std::enable_shared_from_this<Literal> {
   }
 
   const std::any value;
+};
+
+struct Variable : public Expression, std::enable_shared_from_this<Variable> {
+  Variable(const Token& token) : token(token) {}
+
+  std::any accept(AstVisitor* visitor) const override {
+    return visitor->visit(shared_from_this());
+  }
+  const Token token;
 };
 
 struct Block : public Expression, std::enable_shared_from_this<Block> {

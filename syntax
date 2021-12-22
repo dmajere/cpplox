@@ -1,4 +1,6 @@
-program -> statement* EOF;
+program -> declaration* EOF;
+declaration -> varDeclaration | statement;
+varDeclaration -> "var" IDENTIFIER ( "=" expression)? ";";
 statement -> exprStatement 
            | printStatement; 
 exprStatement -> expression ";"
@@ -10,7 +12,13 @@ comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
 term -> factor ( ("-" | "+") factor)*;
 factor -> unary ( ("/" | "*") unary)*;
 unary -> ("!" | "-" | "--" | "++" ) unary | primary;
-primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")";
 condition -> if | ternary;
 if -> "if (" expression ") {" expression "}" ("else {"  expression "}")?;  
 ternary -> expression "?" expression (: expression)?;
+primary -> NUMBER 
+         | STRING 
+         | IDENTIFIER 
+         | "true" 
+         | "false" 
+         | "nil" 
+         | "(" expression ")";

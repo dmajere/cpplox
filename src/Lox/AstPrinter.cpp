@@ -56,6 +56,10 @@ std::any AstPrinter::visit(std::shared_ptr<const Literal> literal) {
   return "";
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const Variable> var) {
+  return var->token.lexeme;
+}
+
 std::any AstPrinter::visit(std::shared_ptr<const Block> block) {
   std::stringstream ss;
   ss << "( ";
@@ -83,17 +87,25 @@ std::any AstPrinter::visit(std::shared_ptr<const Condition> condition) {
 
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
   std::stringstream ss;
-  ss << "("
-     << std::any_cast<std::string>(stmt->expression->accept(this))
+  ss << "(" << std::any_cast<std::string>(stmt->expression->accept(this))
      << ")";
   return ss.str();
 }
 
 std::any AstPrinter::visit(std::shared_ptr<const Print> stmt) {
   std::stringstream ss;
-  ss << "(print "
-     << std::any_cast<std::string>(stmt->expression->accept(this))
+  ss << "(print " << std::any_cast<std::string>(stmt->expression->accept(this))
      << ")";
+  return ss.str();
+}
+
+std::any AstPrinter::visit(std::shared_ptr<const Var> stmt) {
+  std::stringstream ss;
+  ss << "(var " << stmt->token.lexeme;
+  if (stmt->initializer) {
+    ss << " = " << std::any_cast<std::string>(stmt->initializer->accept(this));
+  }
+  ss << ")";
   return ss.str();
 }
 
