@@ -2,12 +2,14 @@ program -> declaration* EOF;
 declaration -> varDeclaration | statement;
 varDeclaration -> "var" IDENTIFIER ( "=" expression)? ";";
 statement -> exprStatement 
+           | block
            | printStatement; 
 exprStatement -> expression ";"
 printStatement -> "print" expression;
+block -> "{" declaration* "}";
 expression -> assignment;
-assignment -> IDENTIFIER "=" assignment | block | equality | condition ;
-block -> expression (, expression)*;
+assignment -> IDENTIFIER "=" assignment | sequence | equality | condition ;
+sequence -> expression (, expression)*;
 equality -> comparison ( ("!=" | "==") comparison)*;
 comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
 term -> factor ( ("-" | "+") factor)*;

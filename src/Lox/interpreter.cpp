@@ -6,12 +6,10 @@
 namespace lox {
 namespace lang {
 
-std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Literal> expr) {
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Literal> expr) {
   return expr->value;
 }
-std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Grouping> expr) {
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Grouping> expr) {
   return evaluate(expr->expression);
 }
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> expr) {
@@ -91,7 +89,7 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> expr) {
   return nullptr;
 }
 
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> expr) {
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Sequence> expr) {
   for (int i = 0; i < expr->expressions.size(); i++) {
     if (i == expr->expressions.size() - 1) {
       return evaluate(expr->expressions[i]);
@@ -117,10 +115,11 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Variable> expr) {
   return env_->get(expr->token);
 }
 
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::Assignment> expr) {
-    auto value = evaluate(expr->target);
-    env_->assign(expr->token, value);
-    return nullptr;
+std::any Interpreter::visit(
+    std::shared_ptr<const lox::parser::Assignment> expr) {
+  auto value = evaluate(expr->target);
+  env_->assign(expr->token, value);
+  return nullptr;
 }
 
 std::any Interpreter::visit(
@@ -140,6 +139,10 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Var> stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> stmt) {
+  executeBlock(stmt, std::make_shared<Environment>(this->env_));
+  return nullptr;
+}
 
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
   return expr->accept(this);
@@ -148,7 +151,9 @@ std::any Interpreter::evaluate(
     std::vector<std::shared_ptr<lox::parser::Statement>> stmt) {
   for (auto& s : stmt) {
     try {
-      execute(s);
+      if (s) {
+        execute(s);
+      }
     } catch (RuntimeError& error) {
       lox::lang::Lox::runtime_error(error);
     }
@@ -158,6 +163,22 @@ std::any Interpreter::evaluate(
 
 void Interpreter::execute(std::shared_ptr<lox::parser::Statement>& stmt) {
   stmt->accept(this);
+}
+
+void Interpreter::executeBlock(std::shared_ptr<const lox::parser::Block>& block,
+                               std::shared_ptr<Environment> env) {
+  auto previous = this->env_;
+  try {
+    this->env_ = env;
+    for (auto stmt : block->statements) {
+      execute(stmt);
+    }
+
+  } catch (RuntimeError& error) {
+    this->env_ = previous;
+    throw error;
+  }
+  this->env_ = previous;
 }
 
 bool Interpreter::isTruthy(const std::any& object) const {

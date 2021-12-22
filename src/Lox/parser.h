@@ -55,38 +55,48 @@ class Parser {
     if (match({TT::PRINT})) {
       return printStatement();
     }
+    if (match({TT::LEFT_BRACE})) {
+      return std::make_shared<Block>(block());
+    }
     return expressionStatement();
   }
 
   std::shared_ptr<Statement> printStatement() {
-    auto value = block();
+    auto value = sequence();
     consume(TT::SEMICOLON, "Expect ';' after expression.");
     return std::make_shared<Print>(std::move(value));
   }
 
   std::shared_ptr<Statement> expressionStatement() {
-    auto expr = block();
+    auto expr = sequence();
     consume(TT::SEMICOLON, "Expect ';' after expression.");
     return std::make_shared<StatementExpression>(std::move(expr));
   }
 
-  std::shared_ptr<Expression> block() {
+  std::vector<std::shared_ptr<Statement>> block() {
+    std::vector<std::shared_ptr<Statement>> result;
+    while (!check(TT::RIGHT_BRACE) && !isAtEnd()) {
+      result.push_back(declaration());
+    }
+    consume(TT::RIGHT_BRACE, "Expect '}' after block.");
+    return result;
+  }
+
+  std::shared_ptr<Expression> sequence() {
     auto expr = expression();
     if (check(TT::COMMA)) {
-      auto block = std::make_shared<Block>();
-      block->expressions.push_back(std::move(expr));
+      auto sequence = std::make_shared<Sequence>();
+      sequence->expressions.push_back(std::move(expr));
       while (match({TT::COMMA})) {
         auto expr = expression();
-        block->expressions.push_back(std::move(expr));
+        sequence->expressions.push_back(std::move(expr));
       }
-      return block;
+      return sequence;
     }
     return expr;
   }
 
-  std::shared_ptr<Expression> expression() {
-    return assignment();
-  }
+  std::shared_ptr<Expression> expression() { return assignment(); }
 
   std::shared_ptr<Expression> assignment() {
     auto expr = equality();

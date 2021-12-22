@@ -60,7 +60,7 @@ std::any AstPrinter::visit(std::shared_ptr<const Variable> expr) {
   return expr->token.lexeme;
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const Block> expr) {
+std::any AstPrinter::visit(std::shared_ptr<const Sequence> expr) {
   std::stringstream ss;
   ss << "( ";
   for (auto& expr : expr->expressions) {
@@ -72,9 +72,8 @@ std::any AstPrinter::visit(std::shared_ptr<const Block> expr) {
 
 std::any AstPrinter::visit(std::shared_ptr<const Condition> expr) {
   std::stringstream ss;
-  ss << "(if ("
-     << std::any_cast<std::string>(expr->predicate->accept(this)) << ") "
-     << std::any_cast<std::string>(expr->then->accept(this));
+  ss << "(if (" << std::any_cast<std::string>(expr->predicate->accept(this))
+     << ") " << std::any_cast<std::string>(expr->then->accept(this));
   if (expr->alternative) {
     ss << " else "
        << std::any_cast<std::string>(expr->alternative->accept(this));
@@ -85,12 +84,9 @@ std::any AstPrinter::visit(std::shared_ptr<const Condition> expr) {
 
 std::any AstPrinter::visit(std::shared_ptr<const Assignment> expr) {
   std::stringstream ss;
-  ss << "(assign " 
-     << expr->token.lexeme
-     << " " 
-     << std::any_cast<std::string>(expr->target->accept(this))
-     << ")";
-     return ss.str();
+  ss << "(assign " << expr->token.lexeme << " "
+     << std::any_cast<std::string>(expr->target->accept(this)) << ")";
+  return ss.str();
 }
 
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
@@ -117,6 +113,15 @@ std::any AstPrinter::visit(std::shared_ptr<const Var> stmt) {
   return ss.str();
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const Block> stmt) {
+  std::stringstream ss;
+  ss << "{ \n";
+  for (auto& s : stmt->statements) {
+    ss << std::any_cast<std::string>(s->accept(this)) << "\n";
+  }
+  ss << "}";
+  return ss.str();
+}
 
 }  // namespace parser
 }  // namespace lox

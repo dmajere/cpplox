@@ -17,7 +17,7 @@ struct Grouping;
 struct Unary;
 struct Literal;
 struct Variable;
-struct Block;
+struct Sequence;
 struct Condition;
 struct Assignment;
 
@@ -28,7 +28,7 @@ class AstVisitor {
   virtual std::any visit(std::shared_ptr<const Unary> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Literal> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Variable> expr) = 0;
-  virtual std::any visit(std::shared_ptr<const Block> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Sequence> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Condition> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Assignment> expr) = 0;
   virtual ~AstVisitor() = default;
@@ -96,9 +96,9 @@ struct Variable : public Expression, std::enable_shared_from_this<Variable> {
   const Token token;
 };
 
-struct Block : public Expression, std::enable_shared_from_this<Block> {
-  Block() : expressions{} {}
-  ~Block() {}
+struct Sequence : public Expression, std::enable_shared_from_this<Sequence> {
+  Sequence() : expressions{} {}
+  ~Sequence() {}
 
   std::any accept(AstVisitor* visitor) const override {
     return visitor->visit(shared_from_this());
@@ -130,16 +130,17 @@ struct Condition : public Expression, std::enable_shared_from_this<Condition> {
   const std::shared_ptr<Expression> alternative;
 };
 
-struct Assignment : Expression, public std::enable_shared_from_this<Assignment> {
+struct Assignment : Expression,
+                    public std::enable_shared_from_this<Assignment> {
   Assignment(const Token& token, std::shared_ptr<Expression> target)
-    : token(token), target(std::move(target)) {}
+      : token(token), target(std::move(target)) {}
 
-    std::any accept(AstVisitor* visitor) const override {
-      return visitor->visit(shared_from_this());
-    }
+  std::any accept(AstVisitor* visitor) const override {
+    return visitor->visit(shared_from_this());
+  }
 
-    const Token token;
-    const std::shared_ptr<Expression> target;
+  const Token token;
+  const std::shared_ptr<Expression> target;
 };
 
 }  // namespace parser

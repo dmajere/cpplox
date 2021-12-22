@@ -22,18 +22,27 @@ class Environment {
 
   void assign(const lox::parser::Token& name, std::any& value) {
     auto it = values_.find(name.lexeme);
-    if (it == values_.end()) {
-      throw RuntimeError(name, "Assinment to unbound variable '" + name.lexeme + "'.");
+    if (it != values_.end()) {
+      it->second = value;
+      return;
     }
-    it->second = value;
+    if (parent_) {
+      parent_->assign(name, value);
+      return;
+    }
+    throw RuntimeError(name,
+                       "Assinment to unbound variable '" + name.lexeme + "'.");
   }
 
   std::any get(const lox::parser::Token& name) const {
     auto it = values_.find(name.lexeme);
-    if (it == values_.end()) {
-      throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+    if (it != values_.end()) {
+      return it->second;
     }
-    return it->second;
+    if (parent_) {
+      return parent_->get(name);
+    }
+    throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
   }
 
  private:

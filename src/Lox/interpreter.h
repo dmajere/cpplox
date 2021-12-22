@@ -20,18 +20,17 @@ class Interpreter : public lox::parser::AstVisitor,
 
   std::any visit(std::shared_ptr<const lox::parser::Literal> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Variable> expr) override;
-  std::any visit(
-      std::shared_ptr<const lox::parser::Grouping> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Grouping> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Unary> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Binary> expr) override;
-  std::any visit(std::shared_ptr<const lox::parser::Block> expr) override;
-  std::any visit(
-      std::shared_ptr<const lox::parser::Condition> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Sequence> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Condition> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Assignment> expr) override;
   std::any visit(
       std::shared_ptr<const lox::parser::StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Print> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Var> stmt) override;
+  std::any visit(std::shared_ptr<const lox::parser::Block> stmt) override;
 
   static std::string toString(const std::any& object) {
     auto& object_type = object.type();
@@ -65,6 +64,8 @@ class Interpreter : public lox::parser::AstVisitor,
   void checkNumberOperands(const lox::parser::Token& token,
                            const std::any& left, const std::any& right) const;
   void execute(std::shared_ptr<lox::parser::Statement>& stmt);
+  void executeBlock(std::shared_ptr<const lox::parser::Block>& stmt,
+                    std::shared_ptr<Environment> env);
 };
 
 }  // namespace lang

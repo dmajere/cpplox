@@ -17,13 +17,14 @@ class AstPrinter : public AstVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Unary> expr) override;
   std::any visit(std::shared_ptr<const Literal> expr) override;
   std::any visit(std::shared_ptr<const Variable> expr) override;
-  std::any visit(std::shared_ptr<const Block> expr) override;
+  std::any visit(std::shared_ptr<const Sequence> expr) override;
   std::any visit(std::shared_ptr<const Condition> expr) override;
   std::any visit(std::shared_ptr<const Assignment> expr) override;
 
   std::any visit(std::shared_ptr<const StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const Print> stmt) override;
   std::any visit(std::shared_ptr<const Var> stmt) override;
+  std::any visit(std::shared_ptr<const Block> stmt) override;
 };
 
 }  // namespace parser

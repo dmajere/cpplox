@@ -10,12 +10,14 @@ namespace parser {
 struct StatementExpression;
 struct Print;
 struct Var;
+struct Block;
 
 class StatementVisitor {
  public:
   virtual std::any visit(std::shared_ptr<const StatementExpression> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Print> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Var> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Block> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 
@@ -60,7 +62,15 @@ struct Var : Statement, public std::enable_shared_from_this<Var> {
   const std::shared_ptr<Expression> initializer;
 };
 
+struct Block : Statement, public std::enable_shared_from_this<Block> {
+  Block(const std::vector<std::shared_ptr<Statement>>& statements)
+      : statements(std::move(statements)) {}
 
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+  const std::vector<std::shared_ptr<Statement>> statements;
+};
 
 }  // namespace parser
 }  // namespace lox
