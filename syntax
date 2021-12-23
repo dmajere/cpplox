@@ -9,6 +9,7 @@ statement -> exprStatement
            | forStatement
            | ifStatement
            | block
+           | return
            | printStatement; 
 exprStatement -> sequence ";"
 printStatement -> "print" sequence;

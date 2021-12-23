@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "ControlException.h"
 #include "expression.h"
 #include "lox.h"
 #include "statement.h"
@@ -83,13 +84,31 @@ class Parser {
     if (match({TT::FOR})) {
       return forStatement();
     }
+    if (match({TT::RETURN})) {
+      // TODO: separate method;
+      Token op = previous();
+      std::shared_ptr<Expression> value = nullptr;
+      if (!check({TT::SEMICOLON})) {
+        value = sequence();
+      }
+      auto exc = std::make_shared<lox::lang::Return>(std::move(value));
+      consume(TT::SEMICOLON, "Expect ';' after expression.");
+      return std::make_shared<ExceptionStatement>(op, std::move(exc));
+    }
     if (match({TT::CONTINUE, TT::BREAK})) {
+      // TODO: separate method;
       Token op = previous();
       if (!inLoop) {
         error(op, "Expect to be inside loop.");
       }
       consume(TT::SEMICOLON, "Expect ';' after expression.");
-      return std::make_shared<LoopControl>(op);
+      std::shared_ptr<lox::lang::ControlException> exc;
+      if (op.type == TT::CONTINUE) {
+        exc = std::make_shared<lox::lang::Continue>();
+      } else {
+        exc = std::make_shared<lox::lang::Break>();
+      }
+      return std::make_shared<ExceptionStatement>(op, std::move(exc));
     }
     if (match({TT::LEFT_BRACE})) {
       return std::make_shared<Block>(block(inLoop));
@@ -179,8 +198,6 @@ class Parser {
   }
 
   std::shared_ptr<Expression> sequence() {
-    // TODO: this must always return a sequence, even if its
-    // one element in it
     auto sequence = std::make_shared<Sequence>();
     sequence->expressions.push_back(expression());
     while (match({TT::COMMA})) {
@@ -333,8 +350,6 @@ class Parser {
     if (check({TT::RIGHT_PAREN})) {
       return nullptr;
     }
-    // TODO: this complicated call interpretation.
-    //  need to redo that.
     return sequence();
   }
 

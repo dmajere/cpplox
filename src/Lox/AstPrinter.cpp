@@ -75,8 +75,7 @@ std::any AstPrinter::visit(std::shared_ptr<const Ternary> expr) {
   ss << "(? (" << std::any_cast<std::string>(expr->predicate->accept(this))
      << ") " << std::any_cast<std::string>(expr->then->accept(this));
   if (expr->alternative) {
-    ss << " : "
-       << std::any_cast<std::string>(expr->alternative->accept(this));
+    ss << " : " << std::any_cast<std::string>(expr->alternative->accept(this));
   }
   ss << " )";
   return ss.str();
@@ -91,16 +90,15 @@ std::any AstPrinter::visit(std::shared_ptr<const Assignment> expr) {
 
 std::any AstPrinter::visit(std::shared_ptr<const Call> expr) {
   std::stringstream ss;
-  ss << "(call "
-    << std::any_cast<std::string>(expr->callee->accept(this)) << " ";
+  ss << "(call " << std::any_cast<std::string>(expr->callee->accept(this))
+     << " ";
   if (expr->arguments) {
-    ss << std::any_cast<std::string>(expr->arguments->accept(this)) ; 
+    ss << std::any_cast<std::string>(expr->arguments->accept(this));
   }
   ss << ")";
 
   return ss.str();
 }
-
 
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
   std::stringstream ss;
@@ -150,15 +148,12 @@ std::any AstPrinter::visit(std::shared_ptr<const If> stmt) {
 
 std::any AstPrinter::visit(std::shared_ptr<const While> stmt) {
   std::stringstream ss;
-  ss << "(while ("
-     << std::any_cast<std::string>(stmt->condition->accept(this)) 
-     << ") {"
-     << std::any_cast<std::string>(stmt->body->accept(this)) 
-     << "}";
+  ss << "(while (" << std::any_cast<std::string>(stmt->condition->accept(this))
+     << ") {" << std::any_cast<std::string>(stmt->body->accept(this)) << "}";
   return ss.str();
 }
 
-std::any AstPrinter::visit(std::shared_ptr<const LoopControl> stmt) {
+std::any AstPrinter::visit(std::shared_ptr<const ExceptionStatement> stmt) {
   return stmt->token.lexeme;
 }
 
@@ -176,7 +171,7 @@ std::any AstPrinter::visit(std::shared_ptr<const Function> stmt) {
       ss << std::any_cast<std::string>(expr->accept(this));
     }
   }
-  ss  << "})"; 
+  ss << "})";
   return ss.str();
 }
 

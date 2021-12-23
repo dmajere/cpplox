@@ -16,6 +16,8 @@ class Interpreter : public lox::parser::AstVisitor,
   Interpreter();
 
   std::any evaluate(std::shared_ptr<lox::parser::Expression> expr);
+  std::any evaluate(std::shared_ptr<lox::parser::Expression> expr,
+                    std::shared_ptr<Environment> env);
   std::any evaluate(
       const std::vector<std::shared_ptr<lox::parser::Statement>>& expr);
   std::any evaluate(
@@ -38,7 +40,8 @@ class Interpreter : public lox::parser::AstVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Block> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::If> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::While> stmt) override;
-  std::any visit(std::shared_ptr<const lox::parser::LoopControl> stmt) override;
+  std::any visit(
+      std::shared_ptr<const lox::parser::ExceptionStatement> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Function> stmt) override;
 
   static std::string toString(const std::any& object) {

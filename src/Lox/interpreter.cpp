@@ -1,6 +1,7 @@
 #include "interpreter.h"
 
 #include "Callable.h"
+#include "ControlException.h"
 #include "LoxFunction.h"
 #include "NativeFunctions.h"
 #include "environment.h"
@@ -203,24 +204,24 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::While> stmt) {
   while (isTruthy(evaluate(stmt->condition))) {
     try {
       execute(stmt->body);
-    } catch (lox::parser::Continue&) {
-      continue;
-    } catch (lox::parser::Break&) {
-      break;
+    } catch (std::shared_ptr<lox::lang::ControlException>& exception) {
+      if (lox::lang::Break* ret =
+              dynamic_cast<lox::lang::Break*>(exception.get())) {
+        break;
+      }
+      if (lox::lang::Continue* ret =
+              dynamic_cast<lox::lang::Continue*>(exception.get())) {
+        continue;
+      }
+      throw exception;
     }
   }
   return nullptr;
 }
 
 std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::LoopControl> stmt) {
-  if (stmt->token.type == lox::parser::Token::TokenType::BREAK) {
-    throw lox::parser::Break();
-  }
-  if (stmt->token.type == lox::parser::Token::TokenType::CONTINUE) {
-    throw lox::parser::Continue();
-  }
-  return nullptr;
+    std::shared_ptr<const lox::parser::ExceptionStatement> stmt) {
+  throw stmt->exc;
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
@@ -233,6 +234,21 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
   return expr->accept(this);
 }
+
+std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr,
+                               std::shared_ptr<Environment> env) {
+  auto previous = this->env_;
+  try {
+    this->env_ = env;
+    auto result = expr->accept(this);
+    this->env_ = previous;
+    return result;
+  } catch (RuntimeError& error) {
+    this->env_ = previous;
+    throw error;
+  }
+}
+
 std::any Interpreter::evaluate(
     const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt) {
   for (auto& s : stmt) {
@@ -317,6 +333,9 @@ bool Interpreter::isEqual(const std::any& left, const std::any& right) const {
   auto& right_type = right.type();
 
   if (left_type == right_type) {
+    if (left_type == typeid(nullptr)) {
+      return true;
+    }
     if (left_type == typeid(std::string)) {
       return std::any_cast<std::string>(left) ==
              std::any_cast<std::string>(right);

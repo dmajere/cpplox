@@ -2,6 +2,7 @@
 #include <any>
 #include <memory>
 
+#include "ControlException.h"
 #include "expression.h"
 
 namespace lox {
@@ -13,7 +14,7 @@ struct Var;
 struct Block;
 struct If;
 struct While;
-struct LoopControl;
+struct ExceptionStatement;
 struct Function;
 
 class StatementVisitor {
@@ -24,7 +25,7 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const Block> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const If> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const While> stmt) = 0;
-  virtual std::any visit(std::shared_ptr<const LoopControl> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const ExceptionStatement> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Function> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
@@ -127,28 +128,18 @@ struct Function : public Statement, std::enable_shared_from_this<Function> {
   const std::vector<std::shared_ptr<Statement>> body;
 };
 
-// TODO: redo loop control into exception statement. ExceptionStatement(token,
-// exception). That will raise exception in visit method
-struct LoopControl : public Statement,
-                     std::enable_shared_from_this<LoopControl> {
-  LoopControl(const Token& token) : token(token) {}
+struct ExceptionStatement : public Statement,
+                            std::enable_shared_from_this<ExceptionStatement> {
+  ExceptionStatement(const Token& token,
+                     const std::shared_ptr<lox::lang::ControlException>& exc)
+      : token(token), exc(exc) {}
 
   std::any accept(StatementVisitor* visitor) override {
     return visitor->visit(shared_from_this());
   }
 
   const Token token;
-};
-
-struct LoopControlException : public std::runtime_error {
-  using std::runtime_error::runtime_error;
-  LoopControlException() : std::runtime_error(""){};
-};
-struct Continue : public LoopControlException {
-  Continue() : LoopControlException(){};
-};
-struct Break : public LoopControlException {
-  Break() : LoopControlException(){};
+  const std::shared_ptr<lox::lang::ControlException> exc;
 };
 
 }  // namespace parser

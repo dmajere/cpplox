@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Callable.h"
+#include "ControlException.h"
 #include "RuntimeError.h"
 #include "environment.h"
 #include "interpreter.h"
@@ -22,7 +23,15 @@ class LoxFunction : public LoxCallable {
       auto arg = args[i];
       env->define(declaration_->parameters[i].lexeme, arg);
     }
-    interpreter->evaluate(declaration_->body, env);
+    try {
+      interpreter->evaluate(declaration_->body, env);
+    } catch (std::shared_ptr<lox::lang::ControlException>& exception) {
+      if (lox::lang::Return* ret =
+              dynamic_cast<lox::lang::Return*>(exception.get())) {
+        return interpreter->evaluate(ret->value);
+      }
+      throw exception;
+    }
     return nullptr;
   }
   int arity() const override { return declaration_->parameters.size(); }
