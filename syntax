@@ -1,5 +1,8 @@
 program -> declaration* EOF;
-declaration -> varDeclaration | statement;
+declaration -> funcDeclaration | varDeclaration | statement;
+funcDeclaration -> "fun" function;
+function -> IDENTIFIER "(" parameters? ")" block;
+parameters -> IDENTIFIER ("," IDENTIFIER)* ;
 varDeclaration -> "var" IDENTIFIER ( "=" sequence)? ";";
 statement -> exprStatement 
            | whileStatement
@@ -16,7 +19,7 @@ forStatement -> "for" "(" (varDeclaration | exprStatement | ";")
                           sequence? ";"
                           sequence? ")" statement | CONTINUE | BREAK;
 
-sequence -> expression (, expression)*;
+sequence -> expression ("," expression)*;
 expression -> assignment ;
 assignment -> IDENTIFIER "=" assignment | ternary | logic_or;
 logic_or -> logic_and ("or"  logic_and)*;
@@ -26,7 +29,9 @@ equality -> comparison ( ("!=" | "==") comparison)*;
 comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
 term -> factor ( ("-" | "+") factor)*;
 factor -> unary ( ("/" | "*") unary)*;
-unary -> ("!" | "-" | "--" | "++" ) unary | primary;
+unary -> ("!" | "-" | "--" | "++" ) unary | call;
+call -> primary ( "(" arguments? ")" )* ;
+arguments -> sequence;
 
 primary -> NUMBER 
          | STRING 

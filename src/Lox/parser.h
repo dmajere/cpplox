@@ -34,6 +34,9 @@ class Parser {
       if (match({TT::VAR})) {
         return varDeclaration();
       }
+      if (match({TT::FUN})) {
+        return funcDeclaration();
+      }
       return statement(inLoop);
     } catch (ParseError& error) {
       synchronize();
@@ -51,7 +54,23 @@ class Parser {
     return std::make_shared<Var>(name, std::move(initializer));
   }
 
-  std::shared_ptr<Statement> statement(bool inLoop=false) {
+  std::shared_ptr<Statement> funcDeclaration() {
+    Token name = consume(TT::IDENTIFIER, "Expect function name.");
+    consume(TT::LEFT_PAREN, "Expect '(' after function name.");
+    std::vector<Token> parameters;
+    while (!check(TT::RIGHT_PAREN)) {
+      if (parameters.size() > 255) {
+        error(peek(), "Can't have function with more than 255 parameters.");
+      }
+      parameters.push_back(consume(TT::IDENTIFIER, "Expect parameter name."));
+      match({TT::COMMA});
+    }
+    consume(TT::RIGHT_PAREN, "Expect ')' after function parameters.");
+    consume(TT::LEFT_BRACE, "Expect '{' at the beginning of a function body.");
+    return std::make_shared<Function>(std::move(name), parameters, block());
+  }
+
+  std::shared_ptr<Statement> statement(bool inLoop = false) {
     if (match({TT::PRINT})) {
       return printStatement();
     }
@@ -147,30 +166,28 @@ class Parser {
     auto body = statement(true);
     if (increment) {
       body = std::make_shared<Block>(std::vector<std::shared_ptr<Statement>>{
-          std::move(body), std::make_shared<StatementExpression>(std::move(increment))});
+          std::move(body),
+          std::make_shared<StatementExpression>(std::move(increment))});
     }
     body = std::make_shared<While>(std::move(condition), std::move(body));
 
     if (initializer) {
       body = std::make_shared<Block>(std::vector<std::shared_ptr<Statement>>{
-        std::move(initializer), std::move(body)
-      });
+          std::move(initializer), std::move(body)});
     }
     return body;
   }
 
   std::shared_ptr<Expression> sequence() {
-    auto expr = expression();
-    if (check(TT::COMMA)) {
-      auto sequence = std::make_shared<Sequence>();
+    // TODO: this must always return a sequence, even if its
+    // one element in it
+    auto sequence = std::make_shared<Sequence>();
+    sequence->expressions.push_back(expression());
+    while (match({TT::COMMA})) {
+      auto expr = expression();
       sequence->expressions.push_back(std::move(expr));
-      while (match({TT::COMMA})) {
-        auto expr = expression();
-        sequence->expressions.push_back(std::move(expr));
-      }
-      return sequence;
     }
-    return expr;
+    return sequence;
   }
 
   std::shared_ptr<Expression> expression() { return assignment(); }
@@ -178,30 +195,31 @@ class Parser {
   std::shared_ptr<Expression> assignment() {
     auto expr = logical_or();
 
-    if (match({TT::EQUAL, TT::PLUS_EQUAL, TT::MINUS_EQUAL, TT::STAR_EQUAL, TT::SLASH_EQUAL})) {
+    if (match({TT::EQUAL, TT::PLUS_EQUAL, TT::MINUS_EQUAL, TT::STAR_EQUAL,
+               TT::SLASH_EQUAL})) {
       Token equal = previous();
       auto value = assignment();
 
       if (equal.type != TT::EQUAL) {
         Token::TokenType type;
-        switch (equal.type)
-        {
-        case TT::PLUS_EQUAL:
-          type = TT::PLUS;
-          break;
-        case TT::MINUS_EQUAL:
-          type = TT::MINUS;
-          break;
-        case TT::STAR_EQUAL:
-          type = TT::STAR;
-          break;
-        case TT::SLASH_EQUAL:
-          type = TT::SLASH;
-          break;
-        default:
-          error(equal, "Expected valid assignment token.");
+        switch (equal.type) {
+          case TT::PLUS_EQUAL:
+            type = TT::PLUS;
+            break;
+          case TT::MINUS_EQUAL:
+            type = TT::MINUS;
+            break;
+          case TT::STAR_EQUAL:
+            type = TT::STAR;
+            break;
+          case TT::SLASH_EQUAL:
+            type = TT::SLASH;
+            break;
+          default:
+            error(equal, "Expected valid assignment token.");
         }
-        value = std::make_shared<Binary>(expr, Token(type, equal.line), std::make_shared<Literal>(1.0));
+        value = std::make_shared<Binary>(expr, Token(type, equal.line),
+                                         std::make_shared<Literal>(1.0));
       }
 
       if (Variable* e = dynamic_cast<Variable*>(expr.get())) {
@@ -297,7 +315,27 @@ class Parser {
       auto right = unary();
       return std::make_shared<Unary>(op, std::move(right));
     }
-    return primary();
+    return call();
+  }
+
+  std::shared_ptr<Expression> call() {
+    auto func = primary();
+    if (match({TT::LEFT_PAREN})) {
+      auto args = arguments();
+      consume(TT::RIGHT_PAREN, "Expect ')' in function call.");
+      func =
+          std::make_shared<Call>(std::move(func), previous(), std::move(args));
+    }
+    return func;
+  }
+
+  std::shared_ptr<Expression> arguments() {
+    if (check({TT::RIGHT_PAREN})) {
+      return nullptr;
+    }
+    // TODO: this complicated call interpretation.
+    //  need to redo that.
+    return sequence();
   }
 
   std::shared_ptr<Expression> primary() {

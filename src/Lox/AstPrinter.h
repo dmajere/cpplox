@@ -20,6 +20,7 @@ class AstPrinter : public AstVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Sequence> expr) override;
   std::any visit(std::shared_ptr<const Ternary> expr) override;
   std::any visit(std::shared_ptr<const Assignment> expr) override;
+  std::any visit(std::shared_ptr<const Call> expr) override;
 
   std::any visit(std::shared_ptr<const StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const Print> stmt) override;
@@ -28,6 +29,7 @@ class AstPrinter : public AstVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const If> stmt) override;
   std::any visit(std::shared_ptr<const While> stmt) override;
   std::any visit(std::shared_ptr<const LoopControl> stmt) override;
+  std::any visit(std::shared_ptr<const Function> stmt) override;
 };
 
 }  // namespace parser

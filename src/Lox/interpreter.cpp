@@ -1,10 +1,20 @@
 #include "interpreter.h"
 
+#include "Callable.h"
+#include "LoxFunction.h"
+#include "NativeFunctions.h"
 #include "environment.h"
 #include "lox.h"
 
 namespace lox {
 namespace lang {
+
+Interpreter::Interpreter() : globals_(std::make_shared<Environment>()) {
+  auto clock_ptr = std::make_shared<Clock>();
+  auto clock = std::make_any<std::shared_ptr<LoxCallable>>(clock_ptr);
+  globals_->define("clock", clock);
+  env_ = globals_;
+}
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Literal> expr) {
   return expr->value;
@@ -32,21 +42,19 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Unary> expr) {
   }
 }
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> expr) {
-
   auto left = evaluate(expr->left);
-  switch (expr->op.type)
-  {
+  switch (expr->op.type) {
     case lox::parser::Token::TokenType::AND:
-        if (isTruthy(left)) {
-            return isTruthy(evaluate(expr->right));
-        }
-        return false;
-    case lox::parser::Token::TokenType::OR:
-        if (isTruthy(left)) {
-            return true;
-        }
+      if (isTruthy(left)) {
         return isTruthy(evaluate(expr->right));
-  default:
+      }
+      return false;
+    case lox::parser::Token::TokenType::OR:
+      if (isTruthy(left)) {
+        return true;
+      }
+      return isTruthy(evaluate(expr->right));
+    default:
       break;
   }
 
@@ -115,8 +123,7 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Sequence> expr) {
   return nullptr;
 }
 
-std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::Ternary> expr) {
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Ternary> expr) {
   auto predicate = evaluate(expr->predicate);
   if (isTruthy(predicate)) {
     return evaluate(expr->then);
@@ -135,6 +142,30 @@ std::any Interpreter::visit(
   auto value = evaluate(expr->target);
   env_->assign(expr->token, value);
   return nullptr;
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Call> expr) {
+  auto callee = evaluate(expr->callee);
+  std::vector<std::any> args;
+  if (lox::parser::Sequence* seq =
+          dynamic_cast<lox::parser::Sequence*>(expr->arguments.get())) {
+    for (const auto& arg : seq->expressions) {
+      args.push_back(evaluate(arg));
+    }
+  }
+
+  try {
+    auto callable = std::any_cast<std::shared_ptr<LoxCallable>>(callee);
+    if (args.size() != callable->arity()) {
+      throw RuntimeError(expr->paren, "Invalid argument number: arg number = " +
+                                          std::to_string(args.size()) +
+                                          " function arity = " +
+                                          std::to_string(callable->arity()));
+    }
+    return callable->call(this, args);
+  } catch (std::bad_any_cast&) {
+    throw RuntimeError(expr->paren, "Can only call functions and classes.");
+  }
 }
 
 std::any Interpreter::visit(
@@ -169,19 +200,20 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::If> stmt) {
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::While> stmt) {
-    while (isTruthy(evaluate(stmt->condition))) {
-      try {
-        execute(stmt->body);
-      } catch(lox::parser::Continue&) {
-        continue;
-      } catch(lox::parser::Break&) {
-        break;
-      }
+  while (isTruthy(evaluate(stmt->condition))) {
+    try {
+      execute(stmt->body);
+    } catch (lox::parser::Continue&) {
+      continue;
+    } catch (lox::parser::Break&) {
+      break;
     }
-    return nullptr;
+  }
+  return nullptr;
 }
 
-std::any Interpreter::visit(std::shared_ptr<const lox::parser::LoopControl> stmt) {
+std::any Interpreter::visit(
+    std::shared_ptr<const lox::parser::LoopControl> stmt) {
   if (stmt->token.type == lox::parser::Token::TokenType::BREAK) {
     throw lox::parser::Break();
   }
@@ -191,11 +223,18 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::LoopControl> stmt
   return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
+  auto function = std::make_shared<LoxFunction>(stmt);
+  auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);
+  env_->define(stmt->name.lexeme, callable);
+  return nullptr;
+}
+
 std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
   return expr->accept(this);
 }
 std::any Interpreter::evaluate(
-    std::vector<std::shared_ptr<lox::parser::Statement>> stmt) {
+    const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt) {
   for (auto& s : stmt) {
     try {
       if (s) {
@@ -208,6 +247,13 @@ std::any Interpreter::evaluate(
   return nullptr;
 }
 
+std::any Interpreter::evaluate(
+    const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt,
+    std::shared_ptr<Environment> env) {
+  executeBlock(stmt, env);
+  return nullptr;
+}
+
 void Interpreter::execute(const std::shared_ptr<lox::parser::Statement>& stmt) {
   if (stmt) {
     stmt->accept(this);
@@ -216,10 +262,16 @@ void Interpreter::execute(const std::shared_ptr<lox::parser::Statement>& stmt) {
 
 void Interpreter::executeBlock(std::shared_ptr<const lox::parser::Block>& block,
                                std::shared_ptr<Environment> env) {
+  executeBlock(block->statements, env);
+}
+
+void Interpreter::executeBlock(
+    const std::vector<std::shared_ptr<lox::parser::Statement>>& statements,
+    std::shared_ptr<Environment> env) {
   auto previous = this->env_;
   try {
     this->env_ = env;
-    for (auto stmt : block->statements) {
+    for (auto stmt : statements) {
       if (stmt) {
         execute(stmt);
       }
@@ -245,10 +297,10 @@ bool Interpreter::isTruthy(const std::any& object) const {
     return std::any_cast<bool>(object);
   }
   if (object_type == typeid(double)) {
-      return std::any_cast<double>(object) != 0;
+    return std::any_cast<double>(object) != 0;
   }
   if (object_type == typeid(std::string)) {
-      return std::any_cast<std::string>(object) != "";
+    return std::any_cast<std::string>(object) != "";
   }
   return true;
 }

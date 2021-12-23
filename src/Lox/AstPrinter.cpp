@@ -89,6 +89,19 @@ std::any AstPrinter::visit(std::shared_ptr<const Assignment> expr) {
   return ss.str();
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const Call> expr) {
+  std::stringstream ss;
+  ss << "(call "
+    << std::any_cast<std::string>(expr->callee->accept(this)) << " ";
+  if (expr->arguments) {
+    ss << std::any_cast<std::string>(expr->arguments->accept(this)) ; 
+  }
+  ss << ")";
+
+  return ss.str();
+}
+
+
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
   std::stringstream ss;
   ss << "(" << std::any_cast<std::string>(stmt->expression->accept(this))
@@ -147,6 +160,24 @@ std::any AstPrinter::visit(std::shared_ptr<const While> stmt) {
 
 std::any AstPrinter::visit(std::shared_ptr<const LoopControl> stmt) {
   return stmt->token.lexeme;
+}
+
+std::any AstPrinter::visit(std::shared_ptr<const Function> stmt) {
+  std::stringstream ss;
+  ss << "(fun" << stmt->name.lexeme << "(";
+  if (stmt->parameters.size()) {
+    for (const auto& p : stmt->parameters) {
+      ss << p.lexeme << ", ";
+    }
+  }
+  ss << ") {";
+  if (stmt->body.size()) {
+    for (const auto& expr : stmt->body) {
+      ss << std::any_cast<std::string>(expr->accept(this));
+    }
+  }
+  ss  << "})"; 
+  return ss.str();
 }
 
 }  // namespace parser

@@ -20,6 +20,7 @@ struct Variable;
 struct Sequence;
 struct Ternary;
 struct Assignment;
+struct Call;
 
 class AstVisitor {
  public:
@@ -31,6 +32,7 @@ class AstVisitor {
   virtual std::any visit(std::shared_ptr<const Sequence> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Ternary> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Assignment> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Call> expr) = 0;
   virtual ~AstVisitor() = default;
 };
 
@@ -108,14 +110,14 @@ struct Sequence : public Expression, std::enable_shared_from_this<Sequence> {
 
 struct Ternary : public Expression, std::enable_shared_from_this<Ternary> {
   Ternary(const std::shared_ptr<Expression>& predicate,
-            const std::shared_ptr<Expression>& then)
+          const std::shared_ptr<Expression>& then)
       : predicate(std::move(predicate)),
         then(std::move(then)),
         alternative(nullptr) {}
 
   Ternary(const std::shared_ptr<Expression>& predicate,
-            const std::shared_ptr<Expression>& then,
-            const std::shared_ptr<Expression>& alternative)
+          const std::shared_ptr<Expression>& then,
+          const std::shared_ptr<Expression>& alternative)
       : predicate(std::move(predicate)),
         then(std::move(then)),
         alternative(std::move(alternative)) {}
@@ -141,6 +143,20 @@ struct Assignment : Expression,
 
   const Token token;
   const std::shared_ptr<Expression> target;
+};
+
+struct Call : Expression, public std::enable_shared_from_this<Call> {
+  Call(const std::shared_ptr<Expression>& callee, const Token& paren,
+       const std::shared_ptr<Expression>& arguments)
+      : callee(std::move(callee)),
+        paren(paren),
+        arguments(std::move(arguments)) {}
+  std::any accept(AstVisitor* visitor) const override {
+    return visitor->visit(shared_from_this());
+  }
+  const std::shared_ptr<Expression> callee;
+  const Token paren;
+  const std::shared_ptr<Expression> arguments;
 };
 
 }  // namespace parser

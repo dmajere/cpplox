@@ -13,10 +13,14 @@ namespace lang {
 class Interpreter : public lox::parser::AstVisitor,
                     lox::parser::StatementVisitor {
  public:
-  Interpreter() : env_(std::make_shared<Environment>()) {}
+  Interpreter();
 
   std::any evaluate(std::shared_ptr<lox::parser::Expression> expr);
-  std::any evaluate(std::vector<std::shared_ptr<lox::parser::Statement>> expr);
+  std::any evaluate(
+      const std::vector<std::shared_ptr<lox::parser::Statement>>& expr);
+  std::any evaluate(
+      const std::vector<std::shared_ptr<lox::parser::Statement>>& expr,
+      std::shared_ptr<Environment> env);
 
   std::any visit(std::shared_ptr<const lox::parser::Literal> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Variable> expr) override;
@@ -26,6 +30,7 @@ class Interpreter : public lox::parser::AstVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Sequence> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Ternary> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Assignment> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Call> expr) override;
   std::any visit(
       std::shared_ptr<const lox::parser::StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Print> stmt) override;
@@ -34,6 +39,7 @@ class Interpreter : public lox::parser::AstVisitor,
   std::any visit(std::shared_ptr<const lox::parser::If> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::While> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::LoopControl> stmt) override;
+  std::any visit(std::shared_ptr<const lox::parser::Function> stmt) override;
 
   static std::string toString(const std::any& object) {
     auto& object_type = object.type();
@@ -55,8 +61,10 @@ class Interpreter : public lox::parser::AstVisitor,
     }
     return "";
   }
+  std::shared_ptr<Environment> environment() const { return env_; }
 
  private:
+  std::shared_ptr<Environment> globals_;
   std::shared_ptr<Environment> env_;
 
   bool isTruthy(const std::any& object) const;
@@ -69,6 +77,9 @@ class Interpreter : public lox::parser::AstVisitor,
   void execute(const std::shared_ptr<lox::parser::Statement>& stmt);
   void executeBlock(std::shared_ptr<const lox::parser::Block>& stmt,
                     std::shared_ptr<Environment> env);
+  void executeBlock(
+      const std::vector<std::shared_ptr<lox::parser::Statement>>& statements,
+      std::shared_ptr<Environment> env);
 };
 
 }  // namespace lang

@@ -14,6 +14,7 @@ struct Block;
 struct If;
 struct While;
 struct LoopControl;
+struct Function;
 
 class StatementVisitor {
  public:
@@ -24,6 +25,7 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const If> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const While> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const LoopControl> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Function> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 
@@ -113,7 +115,22 @@ struct While : public Statement, std::enable_shared_from_this<While> {
   const std::shared_ptr<Statement> body;
 };
 
-struct LoopControl : public Statement, std::enable_shared_from_this<LoopControl> {
+struct Function : public Statement, std::enable_shared_from_this<Function> {
+  Function(const Token& name, const std::vector<Token>& parameters,
+           const std::vector<std::shared_ptr<Statement>>& body)
+      : name(name), parameters(std::move(parameters)), body(std::move(body)) {}
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+  const Token name;
+  const std::vector<Token> parameters;
+  const std::vector<std::shared_ptr<Statement>> body;
+};
+
+// TODO: redo loop control into exception statement. ExceptionStatement(token,
+// exception). That will raise exception in visit method
+struct LoopControl : public Statement,
+                     std::enable_shared_from_this<LoopControl> {
   LoopControl(const Token& token) : token(token) {}
 
   std::any accept(StatementVisitor* visitor) override {
@@ -123,15 +140,15 @@ struct LoopControl : public Statement, std::enable_shared_from_this<LoopControl>
   const Token token;
 };
 
-struct LoopControlException: public std::runtime_error {
+struct LoopControlException : public std::runtime_error {
   using std::runtime_error::runtime_error;
-  LoopControlException() : std::runtime_error("") {};
+  LoopControlException() : std::runtime_error(""){};
 };
-struct Continue: public LoopControlException {
-  Continue() : LoopControlException() {};
+struct Continue : public LoopControlException {
+  Continue() : LoopControlException(){};
 };
-struct Break: public LoopControlException {
-  Break() : LoopControlException() {};
+struct Break : public LoopControlException {
+  Break() : LoopControlException(){};
 };
 
 }  // namespace parser
