@@ -86,7 +86,7 @@ std::any AstPrinter::visit(std::shared_ptr<const Call> expr) {
 std::any AstPrinter::visit(std::shared_ptr<const Lambda> expr) {
   std::stringstream ss;
   ss << "(lambda (";
-  if (expr->function->parameters.size()) {
+  if (!expr->function->parameters.empty()) {
     for (const auto& p : expr->function->parameters) {
       ss << p.lexeme << ", ";
     }
@@ -163,7 +163,7 @@ std::any AstPrinter::visit(std::shared_ptr<const Return> stmt) {
 std::any AstPrinter::visit(std::shared_ptr<const Function> stmt) {
   std::stringstream ss;
   ss << "(fun" << stmt->name.lexeme << "(";
-  if (stmt->parameters.size()) {
+  if (!stmt->parameters.empty()) {
     for (const auto& p : stmt->parameters) {
       ss << p.lexeme << ", ";
     }

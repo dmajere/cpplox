@@ -2,8 +2,9 @@ set(This lang)
 set(Sources 
     utils.cpp
     lox.cpp
-    interpreter.cpp
+    Interpreter.cpp
     AstPrinter.cpp
+    Resolver.cpp
 )
 
 add_library(${This} ${Sources})

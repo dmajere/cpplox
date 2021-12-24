@@ -35,6 +35,11 @@ void Interpreter::evaluate(const std::shared_ptr<lox::parser::Block>& block,
   execute(block->statements, env);
 }
 
+void Interpreter::resolve(std::shared_ptr<const lox::parser::Expression> expr,
+                          int depth) {
+  locals_.insert({expr, depth});
+}
+
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Literal> expr) {
   return expr->value;
 }
@@ -153,18 +158,25 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Ternary> expr) {
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Variable> expr) {
-  return env_->get(expr->token);
+  return lookupVariable(expr->token, expr);
 }
 
 std::any Interpreter::visit(
     std::shared_ptr<const lox::parser::Assignment> expr) {
   auto value = evaluate(expr->target);
-  env_->assign(expr->token, value);
+  auto it = locals_.find(expr);
+  if (it == locals_.end()) {
+    globals_->assign(expr->token, value);
+  } else {
+    int distance = it->second;
+    env_->assignAt(expr->token, value, distance);
+  }
   return nullptr;
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Call> expr) {
   auto callee = evaluate(expr->callee);
+
   std::vector<std::any> args;
   if (lox::parser::Sequence* seq =
           dynamic_cast<lox::parser::Sequence*>(expr->arguments.get())) {
@@ -194,7 +206,8 @@ std::any Interpreter::visit(
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Print> stmt) {
-  std::cout << lox::util::any_to_string(evaluate(stmt->expression)) << "\n";
+  std::cout << "[Out]: " << lox::util::any_to_string(evaluate(stmt->expression))
+            << "\n";
   return nullptr;
 }
 
@@ -355,5 +368,16 @@ void Interpreter::checkNumberOperands(const lox::parser::Token& token,
   throw RuntimeError(token, "Operands must be numbers.");
 }
 
+std::any Interpreter::lookupVariable(
+    const lox::parser::Token& name,
+    std::shared_ptr<const lox::parser::Expression> expr) {
+  auto it = locals_.find(expr);
+  if (it == locals_.end()) {
+    return globals_->get(name);
+  } else {
+    int distance = it->second;
+    return env_->getAt(name, distance);
+  }
+}
 }  // namespace lang
 }  // namespace lox

@@ -9,6 +9,7 @@
 #include "AstPrinter.h"
 #include "Interpreter.h"
 #include "Parser.h"
+#include "Resolver.h"
 #include "Scanner.h"
 
 constexpr std::string_view kLoxInputPrompt = "[In]: ";
@@ -29,8 +30,10 @@ void Lox::runFromFile(const std::string& path) {
 }
 
 void Lox::runPrompt() {
-  auto interpreter = lox::lang::Interpreter();
-  auto printer = lox::parser::AstPrinter();
+  auto printer = std::make_unique<lox::parser::AstPrinter>();
+  auto interpreter = std::make_shared<lox::lang::Interpreter>();
+  auto resolver = std::make_unique<lox::lang::Resolver>(interpreter);
+  hadError = false;
 
   for (std::string line;; std::getline(std::cin, line)) {
     if (std::cin.fail()) {
@@ -39,19 +42,25 @@ void Lox::runPrompt() {
     if (!line.empty()) {
       auto scanner = lox::parser::Scanner(line);
       auto tokens = scanner.scanTokens();
-      for (const auto& tok : tokens) {
-        std::cout << "Token: " << tok << "\n";
-      }
       auto parser = lox::parser::Parser(tokens);
       auto statements = parser.parse();
+      if (hadError) continue;
+
+      std::cout << "=== AST ===\n";
       for (const auto& stmt : statements) {
         if (stmt) {
-          std::cout << "AST: " << printer.print(stmt) << "\n";
+          std::cout << printer->print(stmt) << "\n";
         }
       }
+      std::cout << "=== === ===\n";
 
       try {
-        interpreter.evaluate(statements);
+        std::cout << "=== Resolve ===\n";
+        resolver->resolve(statements);
+        std::cout << "=== ======= ===\n";
+        std::cout << "=== Interpret ===\n";
+        interpreter->evaluate(statements);
+        std::cout << "=== ========= ===\n";
       } catch (RuntimeError& error) {
         std::cout << "Error: " << error.what();
       }

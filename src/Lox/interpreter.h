@@ -1,5 +1,6 @@
 #pragma once
 #include <any>
+#include <unordered_map>
 #include <vector>
 
 #include "Environment.h"
@@ -19,6 +20,7 @@ class Interpreter : public lox::parser::ExpressionVisitor,
       const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt);
   void evaluate(const std::shared_ptr<lox::parser::Block>& stmt,
                 std::shared_ptr<Environment> env);
+  void resolve(std::shared_ptr<const lox::parser::Expression> expr, int depth);
 
   // AstVisitor
   std::any visit(std::shared_ptr<const lox::parser::Literal> expr) override;
@@ -50,6 +52,8 @@ class Interpreter : public lox::parser::ExpressionVisitor,
  private:
   std::shared_ptr<Environment> globals_;
   std::shared_ptr<Environment> env_;
+  std::unordered_map<std::shared_ptr<const lox::parser::Expression>, int>
+      locals_;
 
   std::any evaluate(const std::shared_ptr<lox::parser::Expression>& expr);
   void execute(const std::shared_ptr<lox::parser::Statement>& stmt);
@@ -64,6 +68,8 @@ class Interpreter : public lox::parser::ExpressionVisitor,
                           const std::any& object) const;
   void checkNumberOperands(const lox::parser::Token& token,
                            const std::any& left, const std::any& right) const;
+  std::any lookupVariable(const lox::parser::Token& name,
+                          std::shared_ptr<const lox::parser::Expression> expr);
 };
 
 }  // namespace lang

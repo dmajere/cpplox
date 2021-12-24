@@ -34,6 +34,14 @@ class Environment {
                        "Assinment to unbound variable '" + name.lexeme + "'.");
   }
 
+  void assignAt(const lox::parser::Token& name, std::any& value, int distance) {
+    if (distance == 0) {
+      assign(name, value);
+    } else {
+      ancestor(distance)->assign(name, value);
+    }
+  }
+
   std::any get(const lox::parser::Token& name) const {
     auto it = values_.find(name.lexeme);
     if (it != values_.end()) {
@@ -45,9 +53,25 @@ class Environment {
     throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
   }
 
+  std::any getAt(const lox::parser::Token& name, int distance) const {
+    if (distance == 0) {
+      return get(name);
+    } else {
+      return ancestor(distance)->get(name);
+    }
+  }
+
+  std::shared_ptr<Environment> ancestor(int distance) const {
+    if (distance == 1) {
+      return parent_;
+    } else {
+      return parent_->ancestor(distance - 1);
+    }
+  }
+
  private:
   std::unordered_map<std::string, std::any> values_;
-  const std::shared_ptr<Environment> parent_;
+  std::shared_ptr<Environment> parent_;
 };
 
 }  // namespace lang
