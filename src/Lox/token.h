@@ -50,6 +50,7 @@ struct Token {
     ELSE,
     FALSE,
     FUN,
+    LAMBDA,
     FOR,
     IF,
     NIL,

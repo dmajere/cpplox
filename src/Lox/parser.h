@@ -219,8 +219,29 @@ class Parser {
     return sequence;
   }
 
-  std::shared_ptr<Expression> expression() { return assignment(); }
+  std::shared_ptr<Expression> expression() {
+    if (match({TT::LAMBDA})) {
+      return lambda();
+    }
+    return assignment();
+  }
 
+  std::shared_ptr<Expression> lambda() {
+    Token token = previous();
+    consume(TT::LEFT_PAREN, kExpectLeftParen);
+    std::vector<Token> parameters;
+    while (!match({TT::RIGHT_PAREN})) {
+      if (parameters.size() > 255) {
+        error(peek(), "Can't have function with more than 255 parameters.");
+      }
+      parameters.push_back(consume(TT::IDENTIFIER, kExpectIdentifier));
+      match({TT::COMMA});
+    }
+
+    consume(TT::LEFT_BRACE, kExpectLeftBrace);
+    return std::make_shared<Lambda>(std::make_shared<Function>(
+        token, std::move(parameters), std::make_shared<Block>(block())));
+  }
   std::shared_ptr<Expression> assignment() {
     auto expr = logical_or();
 

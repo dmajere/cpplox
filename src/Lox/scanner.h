@@ -29,6 +29,7 @@ const std::unordered_map<std::string, Token::TokenType> keywords = {
     {"while", Token::TokenType::WHILE},
     {"break", Token::TokenType::BREAK},
     {"continue", Token::TokenType::CONTINUE},
+    {"lambda", Token::TokenType::LAMBDA},
 };
 
 class Scanner {

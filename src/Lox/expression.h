@@ -21,6 +21,8 @@ struct Sequence;
 struct Ternary;
 struct Assignment;
 struct Call;
+struct Lambda;
+struct Function;
 
 class ExpressionVisitor {
  public:
@@ -33,6 +35,7 @@ class ExpressionVisitor {
   virtual std::any visit(std::shared_ptr<const Ternary> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Assignment> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Call> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Lambda> expr) = 0;
   virtual ~ExpressionVisitor() = default;
 };
 
@@ -157,6 +160,17 @@ struct Call : Expression, public std::enable_shared_from_this<Call> {
   const std::shared_ptr<Expression> callee;
   const Token paren;
   const std::shared_ptr<Expression> arguments;
+};
+
+struct Lambda : public Expression, std::enable_shared_from_this<Lambda> {
+  explicit Lambda(const std::shared_ptr<Function>& function)
+      : function(std::move(function)) {}
+
+  std::any accept(ExpressionVisitor* visitor) const override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const std::shared_ptr<Function> function;
 };
 
 }  // namespace parser

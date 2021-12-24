@@ -247,6 +247,11 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Return> stmt) {
   throw Return(stmt->token, return_value);
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Lambda> expr) {
+  auto function = std::make_shared<LoxFunction>(expr->function, env_);
+  return std::make_any<std::shared_ptr<LoxCallable>>(function);
+}
+
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   auto function = std::make_shared<LoxFunction>(stmt, env_);
   auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);

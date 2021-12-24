@@ -83,6 +83,22 @@ std::any AstPrinter::visit(std::shared_ptr<const Call> expr) {
   return ss.str();
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const Lambda> expr) {
+  std::stringstream ss;
+  ss << "(lambda (";
+  if (expr->function->parameters.size()) {
+    for (const auto& p : expr->function->parameters) {
+      ss << p.lexeme << ", ";
+    }
+  }
+  ss << ") ";
+  if (expr->function->body) {
+    ss << lox::util::any_to_string(expr->function->body->accept(this));
+  }
+  ss << ")";
+  return ss.str();
+}
+
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
   std::stringstream ss;
   ss << "(" << lox::util::any_to_string(stmt->expression->accept(this)) << ")";

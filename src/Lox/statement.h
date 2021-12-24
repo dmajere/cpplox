@@ -29,8 +29,8 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const While> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Continue> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Break> stmt) = 0;
-  virtual std::any visit(std::shared_ptr<const Function> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Return> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Function> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 

@@ -30,6 +30,7 @@ class Interpreter : public lox::parser::ExpressionVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Ternary> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Assignment> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Call> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Lambda> expr) override;
 
   // StatementVisitor
   std::any visit(
