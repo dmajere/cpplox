@@ -194,7 +194,7 @@ std::any Interpreter::visit(
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Print> stmt) {
-  std::cout << lox::util::any_to_string(evaluate(stmt->expression));
+  std::cout << lox::util::any_to_string(evaluate(stmt->expression)) << "\n";
   return nullptr;
 }
 

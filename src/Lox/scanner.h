@@ -206,7 +206,7 @@ class Scanner {
   }
   Token identifier() {
     int start = current_pos_;
-    while (isalnum(peek())) {
+    while (isalnum(peek()) || peek() == '_') {
       advance();
     }
     auto identifier = source_.substr(start, current_pos_ - start);
