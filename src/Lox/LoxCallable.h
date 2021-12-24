@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include "interpreter.h"
+#include "Interpreter.h"
 
 namespace lox {
 namespace lang {

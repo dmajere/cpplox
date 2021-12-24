@@ -1,7 +1,7 @@
 set(This lang)
 set(Sources 
+    utils.cpp
     lox.cpp
-    scanner.cpp
     interpreter.cpp
     AstPrinter.cpp
 )

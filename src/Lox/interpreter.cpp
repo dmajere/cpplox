@@ -1,11 +1,11 @@
-#include "interpreter.h"
+#include "Interpreter.h"
 
-#include "Callable.h"
 #include "ControlException.h"
+#include "LoxCallable.h"
 #include "LoxFunction.h"
-#include "NativeFunctions.h"
-#include "environment.h"
+#include "LoxNative.h"
 #include "lox.h"
+#include "utils.h"
 
 namespace lox {
 namespace lang {
@@ -15,6 +15,24 @@ Interpreter::Interpreter() : globals_(std::make_shared<Environment>()) {
   auto clock = std::make_any<std::shared_ptr<LoxCallable>>(clock_ptr);
   globals_->define("clock", clock);
   env_ = globals_;
+}
+
+void Interpreter::evaluate(
+    const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt) {
+  for (auto& s : stmt) {
+    try {
+      if (s) {
+        execute(s);
+      }
+    } catch (RuntimeError& error) {
+      lox::lang::Lox::runtime_error(error);
+    }
+  }
+}
+
+void Interpreter::evaluate(const std::shared_ptr<lox::parser::Block>& block,
+                           std::shared_ptr<Environment> env) {
+  execute(block->statements, env);
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Literal> expr) {
@@ -91,7 +109,7 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Binary> expr) {
       }
       if (left_type == typeid(std::string) ||
           right_type == typeid(std::string)) {
-        return toString(left) + toString(right);
+        return lox::util::any_to_string(left) + lox::util::any_to_string(right);
       }
       throw RuntimeError(expr->op,
                          "Operands must be either numbers or strings.");
@@ -176,7 +194,7 @@ std::any Interpreter::visit(
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Print> stmt) {
-  std::cout << toString(evaluate(stmt->expression));
+  std::cout << lox::util::any_to_string(evaluate(stmt->expression));
   return nullptr;
 }
 
@@ -187,7 +205,7 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Var> stmt) {
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Block> stmt) {
-  executeBlock(stmt, std::make_shared<Environment>(this->env_));
+  execute(stmt->statements, std::make_shared<Environment>(this->env_));
   return nullptr;
 }
 
@@ -204,84 +222,48 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::While> stmt) {
   while (isTruthy(evaluate(stmt->condition))) {
     try {
       execute(stmt->body);
-    } catch (std::shared_ptr<lox::lang::ControlException>& exception) {
-      if (lox::lang::Break* ret =
-              dynamic_cast<lox::lang::Break*>(exception.get())) {
-        break;
-      }
-      if (lox::lang::Continue* ret =
-              dynamic_cast<lox::lang::Continue*>(exception.get())) {
-        continue;
-      }
-      throw exception;
+    } catch (Continue&) {
+      continue;
+    } catch (Break&) {
+      break;
     }
   }
   return nullptr;
 }
 
-std::any Interpreter::visit(
-    std::shared_ptr<const lox::parser::ExceptionStatement> stmt) {
-  throw stmt->exc;
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Continue> stmt) {
+  throw Continue(stmt->token);
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Break> stmt) {
+  throw Break(stmt->token);
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Return> stmt) {
+  std::any return_value = nullptr;
+  if (stmt->value) {
+    return_value = stmt->value->accept(this);
+  }
+  throw Return(stmt->token, return_value);
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
-  auto function = std::make_shared<LoxFunction>(stmt);
+  auto function = std::make_shared<LoxFunction>(stmt, env_);
   auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);
   env_->define(stmt->name.lexeme, callable);
   return nullptr;
 }
 
-std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr) {
+std::any Interpreter::evaluate(
+    const std::shared_ptr<lox::parser::Expression>& expr) {
   return expr->accept(this);
 }
 
-std::any Interpreter::evaluate(std::shared_ptr<lox::parser::Expression> expr,
-                               std::shared_ptr<Environment> env) {
-  auto previous = this->env_;
-  try {
-    this->env_ = env;
-    auto result = expr->accept(this);
-    this->env_ = previous;
-    return result;
-  } catch (RuntimeError& error) {
-    this->env_ = previous;
-    throw error;
-  }
-}
-
-std::any Interpreter::evaluate(
-    const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt) {
-  for (auto& s : stmt) {
-    try {
-      if (s) {
-        execute(s);
-      }
-    } catch (RuntimeError& error) {
-      lox::lang::Lox::runtime_error(error);
-    }
-  }
-  return nullptr;
-}
-
-std::any Interpreter::evaluate(
-    const std::vector<std::shared_ptr<lox::parser::Statement>>& stmt,
-    std::shared_ptr<Environment> env) {
-  executeBlock(stmt, env);
-  return nullptr;
-}
-
 void Interpreter::execute(const std::shared_ptr<lox::parser::Statement>& stmt) {
-  if (stmt) {
-    stmt->accept(this);
-  }
+  stmt->accept(this);
 }
 
-void Interpreter::executeBlock(std::shared_ptr<const lox::parser::Block>& block,
-                               std::shared_ptr<Environment> env) {
-  executeBlock(block->statements, env);
-}
-
-void Interpreter::executeBlock(
+void Interpreter::execute(
     const std::vector<std::shared_ptr<lox::parser::Statement>>& statements,
     std::shared_ptr<Environment> env) {
   auto previous = this->env_;
@@ -292,7 +274,9 @@ void Interpreter::executeBlock(
         execute(stmt);
       }
     }
-
+  } catch (Return& return_exception) {
+    this->env_ = previous;
+    throw return_exception;
   } catch (RuntimeError& error) {
     this->env_ = previous;
     throw error;

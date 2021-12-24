@@ -2,16 +2,17 @@
 #include <any>
 #include <string>
 
-#include "expression.h"
-#include "statement.h"
+#include "Expression.h"
+#include "Statement.h"
 
 namespace lox {
 namespace parser {
 
-class AstPrinter : public AstVisitor, StatementVisitor {
+class AstPrinter : public ExpressionVisitor, StatementVisitor {
  public:
-  std::string print(std::shared_ptr<Expression> expr);
-  std::string print(const std::shared_ptr<Statement> stmt);
+  std::string print(const std::shared_ptr<Expression>& expr);
+  std::string print(const std::shared_ptr<Statement>& stmt);
+
   std::any visit(std::shared_ptr<const Binary> expr) override;
   std::any visit(std::shared_ptr<const Grouping> expr) override;
   std::any visit(std::shared_ptr<const Unary> expr) override;
@@ -28,7 +29,9 @@ class AstPrinter : public AstVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Block> stmt) override;
   std::any visit(std::shared_ptr<const If> stmt) override;
   std::any visit(std::shared_ptr<const While> stmt) override;
-  std::any visit(std::shared_ptr<const ExceptionStatement> stmt) override;
+  std::any visit(std::shared_ptr<const Continue> stmt) override;
+  std::any visit(std::shared_ptr<const Break> stmt) override;
+  std::any visit(std::shared_ptr<const Return> stmt) override;
   std::any visit(std::shared_ptr<const Function> stmt) override;
 };
 

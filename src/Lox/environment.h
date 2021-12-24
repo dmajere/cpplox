@@ -3,9 +3,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "Interpreter.h"
 #include "RuntimeError.h"
-#include "interpreter.h"
-#include "token.h"
+#include "Token.h"
 
 namespace lox {
 namespace lang {

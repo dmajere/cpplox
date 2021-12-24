@@ -1,29 +1,35 @@
 #pragma once
+#include <any>
 #include <stdexcept>
 
-#include "expression.h"
+#include "Expression.h"
+#include "Token.h"
 
 namespace lox {
 namespace lang {
 
 struct ControlException : public std::runtime_error {
   using std::runtime_error::runtime_error;
-  ControlException() : std::runtime_error(""){};
+  explicit ControlException(const lox::parser::Token& token)
+      : std::runtime_error(""), token(token){};
+
+  const lox::parser::Token token;
 };
 
 struct Continue : public ControlException {
-  Continue() : ControlException(){};
+  explicit Continue(const lox::parser::Token& token)
+      : ControlException(token){};
 };
 
 struct Break : public ControlException {
-  Break() : ControlException(){};
+  explicit Break(const lox::parser::Token& token) : ControlException(token){};
 };
 
 struct Return : public ControlException {
-  Return(const std::shared_ptr<lox::parser::Expression>& value)
-      : ControlException(), value(value) {}
+  Return(const lox::parser::Token& token, const std::any& value)
+      : ControlException(token), value(value) {}
 
-  const std::shared_ptr<lox::parser::Expression> value;
+  const std::any value;
 };
 
 }  // namespace lang

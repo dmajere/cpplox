@@ -1,24 +1,32 @@
 #pragma once
 
+#include <string_view>
 #include <vector>
 
 #include "ControlException.h"
-#include "expression.h"
+#include "Expression.h"
+#include "ParseError.h"
+#include "Statement.h"
+#include "Token.h"
 #include "lox.h"
-#include "statement.h"
-#include "token.h"
 
 using TT = lox::parser::Token::TokenType;
+
+constexpr std::string_view kExpectSemicolon = "Expect ';' after expression.";
+constexpr std::string_view kExpectLeftParen = "Expect '(' in expression.";
+constexpr std::string_view kExpectRightParen = "Expect ')' after expression.";
+constexpr std::string_view kExpectLeftBrace = "Expect '{' in expression.";
+constexpr std::string_view kExpectRightBrace = "Expect '}' after expression.";
+constexpr std::string_view kExpectIdentifier =
+    "Expect identifier in expression.";
+constexpr std::string_view kExpectExpression = "Expect expression";
+constexpr std::string_view kUnexpectedTokenType = "Unexpected token type.";
 
 namespace lox {
 namespace parser {
 
 class Parser {
  public:
-  struct ParseError : public std::runtime_error {
-    using std::runtime_error::runtime_error;
-  };
-
   Parser(std::vector<Token> tokens) : tokens_(tokens), current_(0) {}
 
   std::vector<std::shared_ptr<Statement>> parse() {
@@ -46,29 +54,31 @@ class Parser {
   }
 
   std::shared_ptr<Statement> varDeclaration() {
-    Token name = consume(TT::IDENTIFIER, "Expect variable name.");
+    Token name = consume(TT::IDENTIFIER, kExpectIdentifier);
     std::shared_ptr<Expression> initializer = nullptr;
     if (match({TT::EQUAL})) {
       initializer = expression();
     }
-    consume(TT::SEMICOLON, "Expect ';' after expression");
+    consume(TT::SEMICOLON, kExpectSemicolon);
     return std::make_shared<Var>(name, std::move(initializer));
   }
 
   std::shared_ptr<Statement> funcDeclaration() {
-    Token name = consume(TT::IDENTIFIER, "Expect function name.");
-    consume(TT::LEFT_PAREN, "Expect '(' after function name.");
+    Token name = consume(TT::IDENTIFIER, kExpectIdentifier);
+    consume(TT::LEFT_PAREN, kExpectLeftParen);
+
     std::vector<Token> parameters;
-    while (!check(TT::RIGHT_PAREN)) {
+    while (!match({TT::RIGHT_PAREN})) {
       if (parameters.size() > 255) {
         error(peek(), "Can't have function with more than 255 parameters.");
       }
-      parameters.push_back(consume(TT::IDENTIFIER, "Expect parameter name."));
+      parameters.push_back(consume(TT::IDENTIFIER, kExpectIdentifier));
       match({TT::COMMA});
     }
-    consume(TT::RIGHT_PAREN, "Expect ')' after function parameters.");
-    consume(TT::LEFT_BRACE, "Expect '{' at the beginning of a function body.");
-    return std::make_shared<Function>(std::move(name), parameters, block());
+
+    consume(TT::LEFT_BRACE, kExpectLeftBrace);
+    return std::make_shared<Function>(name, std::move(parameters),
+                                      std::make_shared<Block>(block()));
   }
 
   std::shared_ptr<Statement> statement(bool inLoop = false) {
@@ -85,30 +95,13 @@ class Parser {
       return forStatement();
     }
     if (match({TT::RETURN})) {
-      // TODO: separate method;
-      Token op = previous();
-      std::shared_ptr<Expression> value = nullptr;
-      if (!check({TT::SEMICOLON})) {
-        value = sequence();
-      }
-      auto exc = std::make_shared<lox::lang::Return>(std::move(value));
-      consume(TT::SEMICOLON, "Expect ';' after expression.");
-      return std::make_shared<ExceptionStatement>(op, std::move(exc));
+      return returnStatement();
     }
-    if (match({TT::CONTINUE, TT::BREAK})) {
-      // TODO: separate method;
-      Token op = previous();
-      if (!inLoop) {
-        error(op, "Expect to be inside loop.");
-      }
-      consume(TT::SEMICOLON, "Expect ';' after expression.");
-      std::shared_ptr<lox::lang::ControlException> exc;
-      if (op.type == TT::CONTINUE) {
-        exc = std::make_shared<lox::lang::Continue>();
-      } else {
-        exc = std::make_shared<lox::lang::Break>();
-      }
-      return std::make_shared<ExceptionStatement>(op, std::move(exc));
+    if (match({TT::CONTINUE})) {
+      return continueStatement();
+    }
+    if (match({TT::BREAK})) {
+      return breakStatement();
     }
     if (match({TT::LEFT_BRACE})) {
       return std::make_shared<Block>(block(inLoop));
@@ -116,15 +109,34 @@ class Parser {
     return expressionStatement();
   }
 
+  std::shared_ptr<Statement> returnStatement() {
+    Token op = previous();
+    std::shared_ptr<Expression> value = nullptr;
+    if (!check({TT::SEMICOLON})) {
+      value = sequence();
+    }
+    consume(TT::SEMICOLON, kExpectSemicolon);
+    return std::make_shared<Return>(op, std::move(value));
+  }
+  std::shared_ptr<Statement> continueStatement() {
+    Token op = previous();
+    consume(TT::SEMICOLON, kExpectSemicolon);
+    return std::make_shared<Continue>(op);
+  }
+  std::shared_ptr<Statement> breakStatement() {
+    Token op = previous();
+    consume(TT::SEMICOLON, kExpectSemicolon);
+    return std::make_shared<Break>(op);
+  }
   std::shared_ptr<Statement> printStatement() {
     auto value = sequence();
-    consume(TT::SEMICOLON, "Expect ';' after expression.");
+    consume(TT::SEMICOLON, kExpectSemicolon);
     return std::make_shared<Print>(std::move(value));
   }
 
   std::shared_ptr<Statement> expressionStatement() {
     auto expr = sequence();
-    consume(TT::SEMICOLON, "Expect ';' after expression.");
+    consume(TT::SEMICOLON, kExpectSemicolon);
     return std::make_shared<StatementExpression>(std::move(expr));
   }
 
@@ -133,14 +145,14 @@ class Parser {
     while (!check(TT::RIGHT_BRACE) && !isAtEnd()) {
       result.push_back(declaration(inLoop));
     }
-    consume(TT::RIGHT_BRACE, "Expect '}' after block.");
+    consume(TT::RIGHT_BRACE, kExpectRightBrace);
     return result;
   }
 
   std::shared_ptr<Statement> ifStatement(bool inLoop = false) {
-    consume(TT::LEFT_PAREN, "Expect '(' after if statement.");
+    consume(TT::LEFT_PAREN, kExpectLeftParen);
     auto condition = sequence();
-    consume(TT::RIGHT_PAREN, "Expect ')' after if condition expression.");
+    consume(TT::RIGHT_PAREN, kExpectRightParen);
     auto then = statement(inLoop);
     if (match({TT::ELSE})) {
       return std::make_shared<If>(std::move(condition), std::move(then),
@@ -150,14 +162,14 @@ class Parser {
   }
 
   std::shared_ptr<Statement> whileStatement() {
-    consume(TT::LEFT_PAREN, "Expect '(' after while statement.");
+    consume(TT::LEFT_PAREN, kExpectLeftParen);
     auto condition = sequence();
-    consume(TT::RIGHT_PAREN, "Expect ')' after while condition expression.");
+    consume(TT::RIGHT_PAREN, kExpectRightParen);
     return std::make_shared<While>(std::move(condition), statement(true));
   }
 
   std::shared_ptr<Statement> forStatement() {
-    consume(TT::LEFT_PAREN, "Expect '(' after for statement.");
+    consume(TT::LEFT_PAREN, kExpectLeftParen);
 
     std::shared_ptr<Statement> initializer;
     if (match({TT::SEMICOLON})) {
@@ -174,13 +186,13 @@ class Parser {
     } else {
       condition = std::make_shared<Literal>(true);
     }
-    consume(TT::SEMICOLON, "Expect ';' after condition in for.");
+    consume(TT::SEMICOLON, kExpectSemicolon);
 
     std::shared_ptr<Expression> increment = nullptr;
     if (!check({TT::RIGHT_PAREN})) {
       increment = sequence();
     }
-    consume(TT::RIGHT_PAREN, "Expect ';' after condition in for.");
+    consume(TT::RIGHT_PAREN, kExpectRightParen);
 
     auto body = statement(true);
     if (increment) {
@@ -233,7 +245,7 @@ class Parser {
             type = TT::SLASH;
             break;
           default:
-            error(equal, "Expected valid assignment token.");
+            error(equal, kUnexpectedTokenType);
         }
         value = std::make_shared<Binary>(expr, Token(type, equal.line),
                                          std::make_shared<Literal>(1.0));
@@ -243,7 +255,7 @@ class Parser {
         Token name = e->token;
         return std::make_shared<Assignment>(std::move(name), std::move(value));
       }
-      error(equal, "Invalid assignment target.");
+      error(equal, kExpectExpression);
     }
     if (match({TT::QUESTION})) {
       return ternary(std::move(expr));
@@ -339,7 +351,7 @@ class Parser {
     auto func = primary();
     if (match({TT::LEFT_PAREN})) {
       auto args = arguments();
-      consume(TT::RIGHT_PAREN, "Expect ')' in function call.");
+      consume(TT::RIGHT_PAREN, kExpectRightParen);
       func =
           std::make_shared<Call>(std::move(func), previous(), std::move(args));
     }
@@ -384,10 +396,10 @@ class Parser {
     }
     if (match({TT::LEFT_PAREN})) {
       auto expr = expression();
-      consume(TT::RIGHT_PAREN, "Expect ')' after expression.");
+      consume(TT::RIGHT_PAREN, kExpectRightParen);
       return std::make_shared<Grouping>(std::move(expr));
     }
-    error(peek(), "Expect expresion");
+    error(peek(), kExpectExpression);
     return nullptr;
   }
 
@@ -398,7 +410,7 @@ class Parser {
     }
     return false;
   }
-  const Token& consume(Token::TokenType type, const std::string& message) {
+  const Token& consume(Token::TokenType type, const std::string_view& message) {
     if (!check(type)) {
       error(peek(), message);
     }
@@ -448,9 +460,9 @@ class Parser {
     }
   }
 
-  void error(const Token& token, const std::string& message) {
-    lox::lang::Lox::error(token, message);
-    throw ParseError(message);
+  void error(const Token& token, const std::string_view& message) {
+    lox::lang::Lox::error(token, std::string(message));
+    throw ParseError(std::string(message));
   }
 
   std::vector<Token> tokens_;

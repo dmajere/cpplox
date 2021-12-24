@@ -7,8 +7,9 @@
 #include <string_view>
 
 #include "AstPrinter.h"
-#include "parser.h"
-#include "scanner.h"
+#include "Interpreter.h"
+#include "Parser.h"
+#include "Scanner.h"
 
 constexpr std::string_view kLoxInputPrompt = "[In]: ";
 constexpr std::string_view kLoxOutputPrompt = "[Out]: ";
@@ -44,7 +45,9 @@ void Lox::runPrompt() {
       auto parser = lox::parser::Parser(tokens);
       auto statements = parser.parse();
       for (const auto& stmt : statements) {
-        std::cout << "AST: " << printer.print(stmt) << "\n";
+        if (stmt) {
+          std::cout << "AST: " << printer.print(stmt) << "\n";
+        }
       }
 
       try {

@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "ControlException.h"
-#include "expression.h"
+#include "Expression.h"
 
 namespace lox {
 namespace parser {
@@ -14,7 +14,9 @@ struct Var;
 struct Block;
 struct If;
 struct While;
-struct ExceptionStatement;
+struct Continue;
+struct Break;
+struct Return;
 struct Function;
 
 class StatementVisitor {
@@ -25,8 +27,10 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const Block> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const If> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const While> stmt) = 0;
-  virtual std::any visit(std::shared_ptr<const ExceptionStatement> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Continue> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Break> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Function> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Return> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 
@@ -38,7 +42,7 @@ struct Statement {
 struct StatementExpression
     : Statement,
       public std::enable_shared_from_this<StatementExpression> {
-  StatementExpression(std::shared_ptr<Expression> expression)
+  StatementExpression(const std::shared_ptr<Expression>& expression)
       : expression{std::move(expression)} {}
 
   std::any accept(StatementVisitor* visitor) override {
@@ -49,7 +53,7 @@ struct StatementExpression
 };
 
 struct Print : Statement, public std::enable_shared_from_this<Print> {
-  Print(std::shared_ptr<Expression> expression)
+  Print(const std::shared_ptr<Expression>& expression)
       : expression{std::move(expression)} {}
 
   std::any accept(StatementVisitor* visitor) override {
@@ -60,7 +64,7 @@ struct Print : Statement, public std::enable_shared_from_this<Print> {
 };
 
 struct Var : Statement, public std::enable_shared_from_this<Var> {
-  Var(const Token& token, std::shared_ptr<Expression> initializer)
+  Var(const Token& token, const std::shared_ptr<Expression>& initializer)
       : token(token), initializer(std::move(initializer)) {}
 
   std::any accept(StatementVisitor* visitor) override {
@@ -118,28 +122,47 @@ struct While : public Statement, std::enable_shared_from_this<While> {
 
 struct Function : public Statement, std::enable_shared_from_this<Function> {
   Function(const Token& name, const std::vector<Token>& parameters,
-           const std::vector<std::shared_ptr<Statement>>& body)
+           const std::shared_ptr<Block>& body)
       : name(name), parameters(std::move(parameters)), body(std::move(body)) {}
   std::any accept(StatementVisitor* visitor) override {
     return visitor->visit(shared_from_this());
   }
   const Token name;
   const std::vector<Token> parameters;
-  const std::vector<std::shared_ptr<Statement>> body;
+  const std::shared_ptr<Block> body;
 };
 
-struct ExceptionStatement : public Statement,
-                            std::enable_shared_from_this<ExceptionStatement> {
-  ExceptionStatement(const Token& token,
-                     const std::shared_ptr<lox::lang::ControlException>& exc)
-      : token(token), exc(exc) {}
+struct Continue : public Statement, std::enable_shared_from_this<Continue> {
+  explicit Continue(const Token& token) : token(token) {}
 
   std::any accept(StatementVisitor* visitor) override {
     return visitor->visit(shared_from_this());
   }
 
   const Token token;
-  const std::shared_ptr<lox::lang::ControlException> exc;
+};
+
+struct Break : public Statement, std::enable_shared_from_this<Break> {
+  explicit Break(const Token& token) : token(token) {}
+
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const Token token;
+};
+
+struct Return : public Statement, std::enable_shared_from_this<Return> {
+  explicit Return(const Token& token) : token(token), value(nullptr) {}
+  Return(const Token& token, const std::shared_ptr<Expression>& value)
+      : token(token), value(std::move(value)) {}
+
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const Token token;
+  const std::shared_ptr<Expression> value;
 };
 
 }  // namespace parser

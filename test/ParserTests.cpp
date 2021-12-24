@@ -1,13 +1,14 @@
-#include <any>
-#include <vector>
-#include <string>
-#include <type_traits>
 #include <gtest/gtest.h>
 
-#include "../src/Lox/token.h"
-#include "../src/Lox/expression.h"
-#include "../src/Lox/parser.h"
+#include <any>
+#include <string>
+#include <type_traits>
+#include <vector>
+
 #include "../src/Lox/AstPrinter.h"
+#include "../src/Lox/Expression.h"
+#include "../src/Lox/Parser.h"
+#include "../src/Lox/Token.h"
 
 using namespace lox::parser;
 using Tokens = std::vector<Token>;
@@ -16,111 +17,73 @@ using TT = lox::parser::Token::TokenType;
 auto printer = AstPrinter();
 
 TEST(ParserTests, TestEmptyTokens) {
-    Tokens tokens = {{TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_FALSE(stmts.size());
+  Tokens tokens = {{TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_FALSE(stmts.size());
 }
 
 TEST(ParserTests, TestPrimaryFalse) {
-    Tokens tokens = {
-        {TT::FALSE, "false", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(false)"
-    );
+  Tokens tokens = {{TT::FALSE, "false", 0}, {TT::SEMICOLON, 0}, {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(false)");
 }
 
 TEST(ParserTests, TestPrimaryTrue) {
-    Tokens tokens = {
-        {TT::TRUE, "true", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(true)"
-    );
+  Tokens tokens = {{TT::TRUE, "true", 0}, {TT::SEMICOLON, 0}, {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(true)");
 }
 
 TEST(ParserTests, TestPrimaryNil) {
-    Tokens tokens = {
-        {TT::NIL, "nil", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(nil)"
-    );
+  Tokens tokens = {{TT::NIL, "nil", 0}, {TT::SEMICOLON, 0}, {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(nil)");
 }
 
 TEST(ParserTests, TestPrimaryNumber) {
-    Tokens tokens = {
-        {TT::NUMBER, "400", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(400.000000)"
-    );
+  Tokens tokens = {{TT::NUMBER, "400", 0}, {TT::SEMICOLON, 0}, {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(400.000000)");
 }
 
 TEST(ParserTests, TestPrimaryNumberPostfix) {
-    Tokens tokens = {
-        {TT::NUMBER, "400", 0},
-        {TT::PLUS_PLUS, "++", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(( ++ 400.000000 ))"
-    );
+  Tokens tokens = {{TT::NUMBER, "400", 0},
+                   {TT::PLUS_PLUS, "++", 0},
+                   {TT::SEMICOLON, 0},
+                   {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(( ++ 400.000000 ))");
 }
 
 TEST(ParserTests, TestPrimaryString) {
-    Tokens tokens = {
-        {TT::STRING, "str", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(\"str\")"
-    );
+  Tokens tokens = {{TT::STRING, "str", 0}, {TT::SEMICOLON, 0}, {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(\"str\")");
 }
 
 TEST(ParserTests, TestPrimaryGrouping) {
-    Tokens tokens = {
-        {TT::LEFT_PAREN, "(", 0},
-        {TT::STRING, "str", 0},
-        {TT::RIGHT_PAREN, ")", 0},
-        {TT::SEMICOLON, 0},
-        {TT::END, 0}};
-    auto p = Parser(tokens);
-    auto stmts = p.parse();
-    EXPECT_TRUE(stmts.size() == 1);
-    EXPECT_EQ(
-        printer.print(stmts[0]),
-        "(( \"str\" ))"
-    );
+  Tokens tokens = {{TT::LEFT_PAREN, "(", 0},
+                   {TT::STRING, "str", 0},
+                   {TT::RIGHT_PAREN, ")", 0},
+                   {TT::SEMICOLON, 0},
+                   {TT::END, 0}};
+  auto p = Parser(tokens);
+  auto stmts = p.parse();
+  EXPECT_TRUE(stmts.size() == 1);
+  EXPECT_EQ(printer.print(stmts[0]), "(( \"str\" ))");
 }
 
 // TEST(ParserTests, TestPrimaryGroupingParseErrorMissingRightParen) {
@@ -334,6 +297,6 @@ TEST(ParserTests, TestPrimaryGrouping) {
 //     auto printer = AstPrinter();
 //     auto result = printer.print(expr);
 //     EXPECT_EQ(
-//        result, "( true, true, true, )" 
+//        result, "( true, true, true, )"
 //     );
 // }
