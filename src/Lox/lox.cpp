@@ -33,9 +33,9 @@ void Lox::runPrompt() {
   auto printer = std::make_unique<lox::parser::AstPrinter>();
   auto interpreter = std::make_shared<lox::lang::Interpreter>();
   auto resolver = std::make_unique<lox::lang::Resolver>(interpreter);
-  hadError = false;
 
   for (std::string line;; std::getline(std::cin, line)) {
+    hadError = false;
     if (std::cin.fail()) {
       return;
     }
@@ -44,8 +44,8 @@ void Lox::runPrompt() {
       auto tokens = scanner.scanTokens();
       auto parser = lox::parser::Parser(tokens);
       auto statements = parser.parse();
-      if (hadError) continue;
 
+      if (hadError) continue;
       std::cout << "=== AST ===\n";
       for (const auto& stmt : statements) {
         if (stmt) {
@@ -58,6 +58,8 @@ void Lox::runPrompt() {
         std::cout << "=== Resolve ===\n";
         resolver->resolve(statements);
         std::cout << "=== ======= ===\n";
+        if (hadError) continue;
+
         std::cout << "=== Interpret ===\n";
         interpreter->evaluate(statements);
         std::cout << "=== ========= ===\n";

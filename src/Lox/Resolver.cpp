@@ -1,14 +1,23 @@
 #include "Resolver.h"
 
-#include <iostream>
+#include <string_view>
 
+#include "ParseError.h"
 #include "lox.h"
+
+constexpr std::string_view kVariableInInitializer =
+    "Can't read local variable in it's own initializer.";
+constexpr std::string_view kVariableDefined = "Variable already defined.";
 
 namespace lox {
 namespace lang {
 
 Resolver::Resolver(std::shared_ptr<Interpreter> interpreter)
-    : interpreter_{std::move(interpreter)} {};
+    : interpreter_{std::move(interpreter)},
+      currentFunction_(FunctionType::None) {
+  beginScope();
+};
+Resolver::~Resolver() { endScope(); }
 
 void Resolver::resolve(
     const std::vector<std::shared_ptr<lox::parser::Statement>>& statements) {
@@ -24,8 +33,7 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Variable> expr) {
     auto& scope = scopes_.back();
     auto it = scope.find(expr->token.lexeme);
     if (it != scope.end() && it->second == false) {
-      lox::lang::Lox::error(
-          expr->token, "Can't read local variable in it's own initializer.");
+      lox::lang::Lox::error(expr->token, std::string(kVariableInInitializer));
     }
   }
   resolve(expr, expr->token);
@@ -84,7 +92,7 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Ternary> expr) {
 }
 
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Lambda> expr) {
-  resolve((std::shared_ptr<const lox::parser::Function>)expr->function);
+  resolve(expr->function, FunctionType::Function);
   return nullptr;
 }
 
@@ -107,7 +115,7 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Var> stmt) {
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   declare(stmt->name);
   define(stmt->name);
-  resolve(stmt);
+  resolve(stmt, FunctionType::Function);
   return nullptr;
 }
 
@@ -146,6 +154,9 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::While> stmt) {
 }
 
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Return> stmt) {
+  if (currentFunction_ == FunctionType::None) {
+    lox::lang::Lox::error(stmt->token, "Return not inside function.");
+  }
   if (stmt->value) {
     resolve(stmt->value);
   }
@@ -162,7 +173,7 @@ void Resolver::resolve(const std::shared_ptr<lox::parser::Expression>& expr) {
 
 void Resolver::resolve(std::shared_ptr<const lox::parser::Expression> expr,
                        const lox::parser::Token& name) {
-  for (int i = scopes_.size() - 1; i >= 0; i--) {
+  for (int i = scopes_.size() - 1; i >= 1; i--) {
     auto& scope = scopes_.at(i);
     auto it = scope.find(name.lexeme);
     if (it != scope.end()) {
@@ -172,7 +183,10 @@ void Resolver::resolve(std::shared_ptr<const lox::parser::Expression> expr,
   }
 }
 
-void Resolver::resolve(std::shared_ptr<const lox::parser::Function> func) {
+void Resolver::resolve(std::shared_ptr<const lox::parser::Function> func,
+                       FunctionType type) {
+  FunctionType enclosing = currentFunction_;
+  currentFunction_ = type;
   beginScope();
   for (const auto& param : func->parameters) {
     declare(param);
@@ -180,6 +194,7 @@ void Resolver::resolve(std::shared_ptr<const lox::parser::Function> func) {
   }
   resolve(func->body);
   endScope();
+  currentFunction_ = enclosing;
 }
 
 void Resolver::beginScope() {
@@ -189,10 +204,16 @@ void Resolver::beginScope() {
 void Resolver::endScope() { scopes_.pop_back(); }
 
 void Resolver::declare(const lox::parser::Token& name) {
+  std::cout << "declare\n";
   if (scopes_.empty()) {
+    std::cout << "declare::empty\n";
     return;
   }
   auto& scope = scopes_.back();
+  if (scope.find(name.lexeme) != scope.end()) {
+    std::cout << "Defined\n";
+    lox::lang::Lox::error(name, std::string(kVariableDefined));
+  }
   scope.insert({name.lexeme, false});
 }
 

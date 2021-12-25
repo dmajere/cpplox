@@ -16,6 +16,7 @@ class Resolver : public lox::parser::ExpressionVisitor,
                  lox::parser::StatementVisitor {
  public:
   Resolver(std::shared_ptr<Interpreter> interpreter);
+  ~Resolver();
   void resolve(
       const std::vector<std::shared_ptr<lox::parser::Statement>>& statements);
 
@@ -43,14 +44,18 @@ class Resolver : public lox::parser::ExpressionVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Function> stmt) override;
 
  private:
+  enum class FunctionType { None, Function };
+
   const std::shared_ptr<Interpreter> interpreter_;
+  FunctionType currentFunction_;
   std::vector<std::unordered_map<std::string, bool>> scopes_;
 
   void resolve(const std::shared_ptr<lox::parser::Statement>& stmt);
   void resolve(const std::shared_ptr<lox::parser::Expression>& expr);
   void resolve(std::shared_ptr<const lox::parser::Expression> expr,
                const lox::parser::Token& name);
-  void resolve(std::shared_ptr<const lox::parser::Function> func);
+  void resolve(std::shared_ptr<const lox::parser::Function> func,
+               FunctionType type);
   void beginScope();
   void endScope();
   void declare(const lox::parser::Token& name);
