@@ -18,6 +18,7 @@ struct Continue;
 struct Break;
 struct Return;
 struct Function;
+struct Class;
 
 class StatementVisitor {
  public:
@@ -31,6 +32,7 @@ class StatementVisitor {
   virtual std::any visit(std::shared_ptr<const Break> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Return> stmt) = 0;
   virtual std::any visit(std::shared_ptr<const Function> stmt) = 0;
+  virtual std::any visit(std::shared_ptr<const Class> stmt) = 0;
   virtual ~StatementVisitor() = default;
 };
 
@@ -163,6 +165,19 @@ struct Return : public Statement, std::enable_shared_from_this<Return> {
 
   const Token token;
   const std::shared_ptr<Expression> value;
+};
+
+struct Class : public Statement, std::enable_shared_from_this<Class> {
+  Class(const Token& name,
+        const std::vector<std::shared_ptr<Function>>& methods)
+      : name(name), methods(std::move(methods)) {}
+
+  std::any accept(StatementVisitor* visitor) override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const Token name;
+  const std::vector<std::shared_ptr<Function>> methods;
 };
 
 }  // namespace parser

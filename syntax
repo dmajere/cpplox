@@ -1,5 +1,9 @@
 program -> declaration* EOF;
-declaration -> funcDeclaration | varDeclaration | statement;
+declaration -> funcDeclaration 
+             | varDeclaration 
+             | classDeclaration
+             | statement;
+classDeclaration -> "class" IDENTIFIER "{" function* "}";
 funcDeclaration -> "fun" function;
 function -> IDENTIFIER "(" parameters? ")" block;
 parameters -> IDENTIFIER ("," IDENTIFIER)* ;
@@ -31,7 +35,7 @@ comparison -> term ( (">" | ">=" | "<" | "=<") term)*;
 term -> factor ( ("-" | "+") factor)*;
 factor -> unary ( ("/" | "*") unary)*;
 unary -> ("!" | "-" | "--" | "++" ) unary | call;
-call -> primary ( "(" arguments? ")" )* ;
+call -> primary ( "(" arguments? ")"  | "." IDENTIFIER )* ;
 arguments -> sequence;
 
 primary -> NUMBER 

@@ -2,6 +2,7 @@
 
 #include "ControlException.h"
 #include "LoxCallable.h"
+#include "LoxClass.h"
 #include "LoxFunction.h"
 #include "LoxNative.h"
 #include "lox.h"
@@ -195,7 +196,20 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Call> expr) {
     }
     return callable->call(this, args);
   } catch (std::bad_any_cast&) {
-    throw RuntimeError(expr->paren, "Can only call functions and classes.");
+    try {
+      auto callable = std::any_cast<std::shared_ptr<LoxClass>>(callee);
+      std::cout << "class\n";
+      if (args.size() != callable->arity()) {
+        throw RuntimeError(
+            expr->paren,
+            "Invalid argument number: arg number = " +
+                std::to_string(args.size()) +
+                " function arity = " + std::to_string(callable->arity()));
+      }
+      return callable->call(this, args);
+    } catch (std::bad_any_cast&) {
+      throw RuntimeError(expr->paren, "Can only call functions and classes.");
+    }
   }
 }
 
@@ -213,7 +227,7 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Print> stmt) {
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Var> stmt) {
   std::any value = stmt->initializer ? evaluate(stmt->initializer) : nullptr;
-  env_->define(stmt->token.lexeme, value);
+  env_->define(stmt->token, value);
   return nullptr;
 }
 
@@ -265,10 +279,22 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Lambda> expr) {
   return std::make_any<std::shared_ptr<LoxCallable>>(function);
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Get> expr) {
+  return nullptr;
+}
+
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   auto function = std::make_shared<LoxFunction>(stmt, env_);
   auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);
-  env_->define(stmt->name.lexeme, callable);
+  env_->define(stmt->name, callable);
+  return nullptr;
+}
+
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
+  std::cout << "define " << stmt->name.lexeme << "\n ";
+  auto klass = std::make_any<std::shared_ptr<LoxClass>>(
+      std::make_shared<LoxClass>(stmt->name.lexeme));
+  env_->define(stmt->name, klass);
   return nullptr;
 }
 

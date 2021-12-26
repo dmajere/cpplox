@@ -23,6 +23,7 @@ class AstPrinter : public ExpressionVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Assignment> expr) override;
   std::any visit(std::shared_ptr<const Call> expr) override;
   std::any visit(std::shared_ptr<const Lambda> expr) override;
+  std::any visit(std::shared_ptr<const Get> expr) override;
 
   std::any visit(std::shared_ptr<const StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const Print> stmt) override;
@@ -34,6 +35,7 @@ class AstPrinter : public ExpressionVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Break> stmt) override;
   std::any visit(std::shared_ptr<const Return> stmt) override;
   std::any visit(std::shared_ptr<const Function> stmt) override;
+  std::any visit(std::shared_ptr<const Class> stmt) override;
 };
 
 }  // namespace parser

@@ -33,6 +33,7 @@ class Interpreter : public lox::parser::ExpressionVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Assignment> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Call> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Lambda> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Get> expr) override;
 
   // StatementVisitor
   std::any visit(
@@ -46,6 +47,7 @@ class Interpreter : public lox::parser::ExpressionVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Break> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Return> stmt) override;
   std::any visit(std::shared_ptr<const lox::parser::Function> stmt) override;
+  std::any visit(std::shared_ptr<const lox::parser::Class> stmt) override;
 
   std::shared_ptr<Environment> environment() const { return env_; }
 

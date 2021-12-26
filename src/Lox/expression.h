@@ -24,6 +24,7 @@ struct Assignment;
 struct Call;
 struct Lambda;
 struct Function;
+struct Get;
 
 class ExpressionVisitor {
  public:
@@ -37,6 +38,7 @@ class ExpressionVisitor {
   virtual std::any visit(std::shared_ptr<const Assignment> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Call> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Lambda> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Get> expr) = 0;
   virtual ~ExpressionVisitor() = default;
 };
 
@@ -172,6 +174,18 @@ struct Lambda : public Expression, std::enable_shared_from_this<Lambda> {
   }
 
   const std::shared_ptr<Function> function;
+};
+
+struct Get : public Expression, std::enable_shared_from_this<Get> {
+  Get(const std::shared_ptr<Expression>& object, const Token& name)
+      : object(std::move(object)), name(name) {}
+
+  std::any accept(ExpressionVisitor* visitor) const override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const std::shared_ptr<Expression> object;
+  const Token name;
 };
 
 }  // namespace parser

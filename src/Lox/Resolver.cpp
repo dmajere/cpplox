@@ -96,6 +96,10 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Lambda> expr) {
   return nullptr;
 }
 
+std::any Resolver::visit(std::shared_ptr<const lox::parser::Get> expr) {
+  return nullptr;
+}
+
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Block> stmt) {
   beginScope();
   resolve(stmt->statements);
@@ -116,6 +120,12 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   declare(stmt->name);
   define(stmt->name);
   resolve(stmt, FunctionType::Function);
+  return nullptr;
+}
+
+std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
+  declare(stmt->name);
+  define(stmt->name);
   return nullptr;
 }
 
@@ -204,14 +214,11 @@ void Resolver::beginScope() {
 void Resolver::endScope() { scopes_.pop_back(); }
 
 void Resolver::declare(const lox::parser::Token& name) {
-  std::cout << "declare\n";
   if (scopes_.empty()) {
-    std::cout << "declare::empty\n";
     return;
   }
   auto& scope = scopes_.back();
   if (scope.find(name.lexeme) != scope.end()) {
-    std::cout << "Defined\n";
     lox::lang::Lox::error(name, std::string(kVariableDefined));
   }
   scope.insert({name.lexeme, false});

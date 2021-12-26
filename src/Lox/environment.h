@@ -20,6 +20,10 @@ class Environment {
     values_.insert({name, value});
   }
 
+  void define(const lox::parser::Token& name, std::any& value) {
+    values_.insert({name.lexeme, value});
+  }
+
   void assign(const lox::parser::Token& name, std::any& value) {
     auto it = values_.find(name.lexeme);
     if (it != values_.end()) {

@@ -40,17 +40,32 @@ class Parser {
  private:
   std::shared_ptr<Statement> declaration(bool inLoop = false) {
     try {
-      if (match({TT::VAR})) {
-        return varDeclaration();
+      if (match({TT::CLASS})) {
+        return classDeclaration();
       }
       if (match({TT::FUN})) {
         return funcDeclaration();
+      }
+      if (match({TT::VAR})) {
+        return varDeclaration();
       }
       return statement(inLoop);
     } catch (ParseError& error) {
       synchronize();
       return nullptr;
     }
+  }
+
+  std::shared_ptr<Statement> classDeclaration() {
+    Token name = consume(TT::IDENTIFIER, kExpectIdentifier);
+    consume(TT::LEFT_BRACE, kExpectLeftBrace);
+
+    std::vector<std::shared_ptr<Function>> methods = {};
+    while (!check(TT::RIGHT_BRACE)) {
+      methods.push_back(funcDeclaration());
+    }
+    consume(TT::RIGHT_BRACE, kExpectRightBrace);
+    return std::make_shared<Class>(name, std::move(methods));
   }
 
   std::shared_ptr<Statement> varDeclaration() {
@@ -63,7 +78,7 @@ class Parser {
     return std::make_shared<Var>(name, std::move(initializer));
   }
 
-  std::shared_ptr<Statement> funcDeclaration() {
+  std::shared_ptr<Function> funcDeclaration() {
     Token name = consume(TT::IDENTIFIER, kExpectIdentifier);
     consume(TT::LEFT_PAREN, kExpectLeftParen);
 
