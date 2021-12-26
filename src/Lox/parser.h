@@ -290,6 +290,8 @@ class Parser {
       if (Variable* e = dynamic_cast<Variable*>(expr.get())) {
         Token name = e->token;
         return std::make_shared<Assignment>(std::move(name), std::move(value));
+      } else if (Get* get = dynamic_cast<Get*>(expr.get())) {
+        return std::make_shared<Set>(get->object, get->name, std::move(value));
       }
       error(equal, kExpectExpression);
     }

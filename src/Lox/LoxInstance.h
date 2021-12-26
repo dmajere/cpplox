@@ -26,6 +26,10 @@ class LoxInstance {
     throw RuntimeError(name, std::string(kUndefinedProperty));
   }
 
+  void set(const lox::parser::Token& name, std::any& value) {
+    fields_.insert_or_assign(name.lexeme, value);
+  }
+
  private:
   const LoxClass* klass_;
   std::unordered_map<std::string, std::any> fields_;

@@ -26,7 +26,7 @@ forStatement -> "for" "(" (varDeclaration | exprStatement | ";")
 
 sequence -> expression ("," expression)*;
 expression -> assignment ;
-assignment -> IDENTIFIER "=" assignment | ternary | logic_or;
+assignment -> (call "." )? IDENTIFIER "=" assignment | ternary | logic_or;
 logic_or -> logic_and ("or"  logic_and)*;
 logic_and -> equality ("and" equality)*;
 ternary -> sequence "?" sequence (: sequence)?;

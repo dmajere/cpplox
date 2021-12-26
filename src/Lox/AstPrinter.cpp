@@ -106,6 +106,14 @@ std::any AstPrinter::visit(std::shared_ptr<const Get> expr) {
   return ss.str();
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const Set> expr) {
+  std::stringstream ss;
+  ss << "(set " << lox::util::any_to_string(expr->object->accept(this)) << "->"
+     << expr->name.lexeme << lox::util::any_to_string(expr->value->accept(this))
+     << ")";
+  return ss.str();
+}
+
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
   std::stringstream ss;
   ss << "(" << lox::util::any_to_string(stmt->expression->accept(this)) << ")";

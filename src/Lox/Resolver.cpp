@@ -101,6 +101,12 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Get> expr) {
   return nullptr;
 }
 
+std::any Resolver::visit(std::shared_ptr<const lox::parser::Set> expr) {
+  resolve(expr->object);
+  resolve(expr->value);
+  return nullptr;
+}
+
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Block> stmt) {
   beginScope();
   resolve(stmt->statements);

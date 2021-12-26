@@ -290,6 +290,19 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Get> expr) {
   return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Set> expr) {
+  auto object = evaluate(expr->object);
+  try {
+    auto instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
+    auto value = evaluate(expr->value);
+    instance->set(expr->name, value);
+    return value;
+  } catch (std::bad_any_cast&) {
+    throw RuntimeError(expr->name, "Only instances have properties.");
+  }
+  return nullptr;
+}
+
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   auto function = std::make_shared<LoxFunction>(stmt, env_);
   auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);
