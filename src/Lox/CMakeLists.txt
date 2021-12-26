@@ -5,6 +5,7 @@ set(Sources
     Interpreter.cpp
     AstPrinter.cpp
     Resolver.cpp
+    LoxInstance.cpp
 )
 
 add_library(${This} ${Sources})

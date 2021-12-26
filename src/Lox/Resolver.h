@@ -47,7 +47,7 @@ class Resolver : public lox::parser::ExpressionVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Class> stmt) override;
 
  private:
-  enum class FunctionType { None, Function };
+  enum class FunctionType { None, Function, Method };
 
   const std::shared_ptr<Interpreter> interpreter_;
   FunctionType currentFunction_;

@@ -133,6 +133,10 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Function> stmt) {
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
   declare(stmt->name);
   define(stmt->name);
+
+  for (const auto& s : stmt->methods) {
+    resolve(s, FunctionType::Method);
+  }
   return nullptr;
 }
 
