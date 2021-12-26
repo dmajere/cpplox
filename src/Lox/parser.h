@@ -383,15 +383,26 @@ class Parser {
     return call();
   }
 
+  std::shared_ptr<Expression> finishCall(
+      const std::shared_ptr<Expression>& callee) {
+    auto args = arguments();
+    consume(TT::RIGHT_PAREN, "Expect ')' after arguments.");
+    return std::make_shared<Call>(callee, previous(), std::move(args));
+  }
+
   std::shared_ptr<Expression> call() {
-    auto func = primary();
-    if (match({TT::LEFT_PAREN})) {
-      auto args = arguments();
-      consume(TT::RIGHT_PAREN, kExpectRightParen);
-      func =
-          std::make_shared<Call>(std::move(func), previous(), std::move(args));
+    auto expr = primary();
+    while (true) {
+      if (match({TT::LEFT_PAREN})) {
+        expr = finishCall(std::move(expr));
+      } else if (match({TT::DOT})) {
+        Token name = consume(TT::IDENTIFIER, kExpectIdentifier);
+        expr = std::make_shared<Get>(std::move(expr), std::move(name));
+      } else {
+        break;
+      }
     }
-    return func;
+    return expr;
   }
 
   std::shared_ptr<Expression> arguments() {

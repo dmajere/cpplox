@@ -280,6 +280,13 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Lambda> expr) {
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Get> expr) {
+  auto object = evaluate(expr->object);
+  try {
+    auto instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
+    return instance->get(expr->name);
+  } catch (std::bad_any_cast&) {
+    throw RuntimeError(expr->name, "Only instances have properties.");
+  }
   return nullptr;
 }
 

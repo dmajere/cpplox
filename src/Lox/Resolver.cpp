@@ -97,6 +97,7 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Lambda> expr) {
 }
 
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Get> expr) {
+  resolve(expr->object);
   return nullptr;
 }
 
