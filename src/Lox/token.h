@@ -70,12 +70,7 @@ struct Token {
   Token(const TokenType type, const int line) : type(type), line(line) {}
   Token(const TokenType type, const std::string& lexeme, const int line)
       : type(type), lexeme(lexeme), line(line){};
-  ~Token() {}
-  friend std::ostream& operator<<(std::ostream& os, const Token& t) {
-    os << "Token[" << static_cast<int>(t.type) << "] " << t.lexeme
-       << " [line:" << t.line << "]";
-    return os;
-  }
+  ~Token() = default;
 
   const TokenType type;
   const std::string lexeme;

@@ -309,17 +309,12 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Super> expr) {
   }
   int distance = it->second;
 
-  // auto object = env_->getAt(expr->keyword, distance);
-  // if (object.type() != typeid(std::shared_ptr<LoxClass>)) {
-  //   throw RuntimeError(expr->keyword, "Got non-class object from
-  //   environment.");
-  // }
   auto superclass = std::any_cast<std::shared_ptr<LoxClass>>(
       env_->getAt(expr->keyword, distance));
   auto object = std::any_cast<std::shared_ptr<LoxInstance>>(env_->getAt(
       lox::parser::Token(lox::parser::Token::TokenType::THIS, "this", 0),
       distance - 1));
-  auto method = superclass->Method(expr->method.lexeme);
+  auto method = superclass->getMethod(expr->method.lexeme);
   if (method == nullptr) {
     throw RuntimeError(expr->method, "Undefined method.");
   }

@@ -60,7 +60,7 @@ class Scanner {
         result.push_back(Token(Token::TokenType::SEMICOLON, ";", line_));
       } else if (match('\n')) {
         line_++;
-      } else if (match(' ') || match('\t') || match('\r')) {
+      } else if (match(' ') || match('\t') || match('\r') || match('\0')) {
         // ignore spaces, tabs and carry
         // Single and Double character tokens
       } else if (match('-')) {

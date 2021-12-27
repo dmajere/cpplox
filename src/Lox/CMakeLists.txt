@@ -1,11 +1,12 @@
 set(This lang)
 set(Sources 
     utils.cpp
-    lox.cpp
-    Interpreter.cpp
-    AstPrinter.cpp
-    Resolver.cpp
+    LoxClass.cpp
     LoxInstance.cpp
+    AstPrinter.cpp
+    Interpreter.cpp
+    Resolver.cpp
+    lox.cpp
 )
 
 add_library(${This} ${Sources})

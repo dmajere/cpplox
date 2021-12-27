@@ -19,35 +19,12 @@ class LoxClass : public LoxCallable,
                methods)
       : name_{name}, superclass_(superclass), methods_(std::move(methods)) {}
 
-  std::shared_ptr<LoxFunction> Method(const std::string& name) const {
-    auto it = methods_.find(name);
-    if (it != methods_.end()) {
-      return it->second;
-    }
-    if (superclass_) {
-      return superclass_->Method(name);
-    }
-    return nullptr;
-  }
-
+  int arity() const override;
   std::any call(Interpreter& interpreter,
-                const std::vector<std::any>& args) override {
-    auto instance = std::make_shared<LoxInstance>(shared_from_this());
-    std::shared_ptr<LoxFunction> initializer = Method("init");
-    if (initializer != nullptr) {
-      initializer->bind(instance)->call(interpreter, args);
-    }
-    return instance;
-  }
-  int arity() const override {
-    auto init = Method("init");
-    if (init) {
-      return init->arity();
-    }
-    return 0;
-  }
+                const std::vector<std::any>& args) override;
 
-  std::string toString() const { return "Class " + name_; }
+  std::shared_ptr<LoxFunction> getMethod(const std::string& name) const;
+  std::string toString() const;
 
  private:
   const std::string name_;

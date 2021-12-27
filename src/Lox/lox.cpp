@@ -26,50 +26,101 @@ void Lox::runFromFile(const std::string& path) {
   std::string code;
   folly::readFile(f.fd(), code);
   run(code);
-  // TODO: had error exits
+}
+
+bool isCompleteStatement(const std::vector<lox::parser::Token>& tokens) {
+  int openBraces = 0;
+  int openParens = 0;
+
+  for (const auto& token : tokens) {
+    if (token.type == lox::parser::Token::TokenType::LEFT_BRACE) {
+      openBraces++;
+    } else if (token.type == lox::parser::Token::TokenType::RIGHT_BRACE) {
+      openBraces--;
+    } else if (token.type == lox::parser::Token::TokenType::LEFT_PAREN) {
+      openParens++;
+    } else if (token.type == lox::parser::Token::TokenType::RIGHT_PAREN) {
+      openParens--;
+    }
+  }
+  return openParens == 0 && openBraces == 0;
 }
 
 void Lox::runPrompt() {
   auto printer = std::make_unique<lox::parser::AstPrinter>();
   auto interpreter = std::make_shared<lox::lang::Interpreter>();
   auto resolver = std::make_unique<lox::lang::Resolver>(interpreter);
+  std::vector<lox::parser::Token> tokens;
 
+  // std::cout << "\n" << kLoxInputPrompt;
   for (std::string line;; std::getline(std::cin, line)) {
     hadError = false;
+
     if (std::cin.fail()) {
       return;
     }
+
     if (!line.empty()) {
       auto scanner = lox::parser::Scanner(line);
-      auto tokens = scanner.scanTokens();
+      if (!tokens.empty()) {
+        tokens.pop_back();
+      }
+
+      auto new_tokens = scanner.scanTokens();
+      tokens.reserve(tokens.size() + new_tokens.size());
+      for (auto token : new_tokens) {
+        tokens.push_back(std::move(token));
+      }
+
+      if (!isCompleteStatement(tokens)) {
+        std::cout << "...";
+        continue;
+      }
+      // for (const auto& token : tokens) {
+      //   std::cout << "'" << token.lexeme << "'\n";
+      // }
       auto parser = lox::parser::Parser(tokens);
       auto statements = parser.parse();
 
-      if (hadError) continue;
-      std::cout << "=== AST ===\n";
-      for (const auto& stmt : statements) {
-        if (stmt) {
-          std::cout << printer->print(stmt) << "\n";
-        }
-      }
-      std::cout << "=== === ===\n";
+      if (hadError) {
+        tokens.clear();
+        std::cout << kLoxInputPrompt;
+        continue;
+      };
+
+      // std::cout << "=== AST ===\n";
+      // for (const auto& stmt : statements) {
+      //   if (stmt) {
+      //     std::cout << printer->print(stmt) << "\n";
+      //   }
+      // }
+      // std::cout << "=== === ===\n";
 
       try {
-        std::cout << "=== Resolve ===\n";
+        // std::cout << "=== Resolve ===\n";
         resolver->resolve(statements);
-        std::cout << "=== ======= ===\n";
-        if (hadError) continue;
+        // std::cout << "=== ======= ===\n";
+        if (hadError) {
+          tokens.clear();
+          std::cout << kLoxInputPrompt;
+          continue;
+        }
 
-        std::cout << "=== Interpret ===\n";
+        // std::cout << "=== Interpret ===\n";
         interpreter->evaluate(statements);
-        std::cout << "=== ========= ===\n";
+        // std::cout << "=== ========= ===\n";
+        tokens.clear();
       } catch (RuntimeError& error) {
         std::cout << "Error: " << error.what();
+        tokens.clear();
       }
-
-      std::cout << "\n";
     }
-    std::cout << kLoxInputPrompt;
+
+    if (!tokens.empty()) {
+      std::cout << "...";
+    } else {
+      std::cout << kLoxInputPrompt;
+    }
   }
 }
 
