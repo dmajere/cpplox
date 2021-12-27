@@ -16,8 +16,10 @@ namespace lang {
 class LoxFunction : public LoxCallable {
  public:
   LoxFunction(const std::shared_ptr<const lox::parser::Function>& declaration,
-              std::shared_ptr<Environment> closure)
-      : declaration_(std::move(declaration)), closure_(closure) {}
+              std::shared_ptr<Environment> closure, bool isInitializer = false)
+      : declaration_(std::move(declaration)),
+        closure_(closure),
+        isInitializer_(isInitializer) {}
 
   std::any call(Interpreter* interpreter,
                 const std::vector<std::any>& args) override {
@@ -29,8 +31,20 @@ class LoxFunction : public LoxCallable {
     try {
       interpreter->evaluate(declaration_->body, env);
     } catch (Return& return_exception) {
+      if (isInitializer_) {
+        return closure_->getAt(
+            lox::parser::Token(lox::parser::Token::TokenType::THIS, "this",
+                               declaration_->name.line),
+            0);
+      }
       return return_exception.value;
     }
+
+    if (isInitializer_)
+      return closure_->getAt(
+          lox::parser::Token(lox::parser::Token::TokenType::THIS, "this",
+                             declaration_->name.line),
+          0);
 
     return nullptr;
   }
@@ -40,7 +54,8 @@ class LoxFunction : public LoxCallable {
   std::shared_ptr<LoxFunction> bind(std::shared_ptr<LoxInstance> instance) {
     auto environment = std::make_shared<Environment>(closure_);
     environment->define("this", instance);
-    return std::make_shared<LoxFunction>(declaration_, environment);
+    return std::make_shared<LoxFunction>(declaration_, environment,
+                                         isInitializer_);
   }
 
   std::string toString() const {
@@ -50,6 +65,7 @@ class LoxFunction : public LoxCallable {
  private:
   const std::shared_ptr<const lox::parser::Function> declaration_;
   std::shared_ptr<Environment> closure_;
+  bool isInitializer_;
 };
 }  // namespace lang
 }  // namespace lox

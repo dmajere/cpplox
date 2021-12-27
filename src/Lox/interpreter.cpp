@@ -316,8 +316,9 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
 
   std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods;
   for (const auto& method : stmt->methods) {
-    methods.insert(
-        {method->name.lexeme, std::make_shared<LoxFunction>(method, closure)});
+    bool isInitializer = method->name.lexeme == "init";
+    methods.insert({method->name.lexeme, std::make_shared<LoxFunction>(
+                                             method, closure, isInitializer)});
   }
   auto klass = std::make_any<std::shared_ptr<LoxClass>>(
       std::make_shared<LoxClass>(stmt->name.lexeme, std::move(methods)));

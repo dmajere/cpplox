@@ -109,7 +109,7 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Set> expr) {
 }
 
 std::any Resolver::visit(std::shared_ptr<const lox::parser::This> expr) {
-  if (currentClass_ == ClassType::Class) {
+  if (currentClass_ != ClassType::Class) {
     lox::lang::Lox::error(expr->token, "This not inside class method.");
   }
   resolve(expr, expr->token);
@@ -149,7 +149,10 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
   scopes_.back().insert({"this", true});
 
   for (const auto& s : stmt->methods) {
-    resolve(s, FunctionType::Method);
+    FunctionType methodType = s->name.lexeme == "init"
+                                  ? FunctionType::Initializer
+                                  : FunctionType::Method;
+    resolve(s, methodType);
   }
   endScope();
   currentClass_ = enclosing;
@@ -193,6 +196,9 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::While> stmt) {
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Return> stmt) {
   if (currentFunction_ == FunctionType::None) {
     lox::lang::Lox::error(stmt->token, "Return not inside function.");
+  }
+  if (currentFunction_ == FunctionType::Initializer) {
+    lox::lang::Lox::error(stmt->token, "Cant return value from initializer.");
   }
   if (stmt->value) {
     resolve(stmt->value);
