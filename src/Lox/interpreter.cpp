@@ -205,7 +205,7 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Call> expr) {
         "Invalid argument number: arg number = " + std::to_string(args.size()) +
             " function arity = " + std::to_string(function->arity()));
   }
-  return function->call(this, args);
+  return function->call(*this, args);
 }
 
 std::any Interpreter::visit(

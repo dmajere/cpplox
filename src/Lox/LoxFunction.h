@@ -21,7 +21,7 @@ class LoxFunction : public LoxCallable {
         closure_(closure),
         isInitializer_(isInitializer) {}
 
-  std::any call(Interpreter* interpreter,
+  std::any call(Interpreter& interpreter,
                 const std::vector<std::any>& args) override {
     auto env = std::make_shared<Environment>(closure_);
     for (int i = 0; i < declaration_->parameters.size(); i++) {
@@ -29,7 +29,7 @@ class LoxFunction : public LoxCallable {
       env->define(declaration_->parameters[i].lexeme, arg);
     }
     try {
-      interpreter->evaluate(declaration_->body, env);
+      interpreter.evaluate(declaration_->body, env);
     } catch (Return& return_exception) {
       if (isInitializer_) {
         return closure_->getAt(

@@ -9,7 +9,7 @@ namespace lang {
 
 class Clock : public LoxCallable {
  public:
-  std::any call(Interpreter* interpreter,
+  std::any call(Interpreter& interpreter,
                 const std::vector<std::any>& args) override {
     return std::chrono::duration<double>(
                std::chrono::duration_cast<std::chrono::milliseconds>(

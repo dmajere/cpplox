@@ -16,8 +16,7 @@ class Token;
 
 class LoxInstance : public std::enable_shared_from_this<LoxInstance> {
  public:
-  // LoxInstance(const std::shared_ptr<const LoxClass>& klass)
-  //     : klass_(std::move(klass)) {}
+  LoxInstance(std::shared_ptr<LoxClass> klass) : klass_(std::move(klass)) {}
   LoxInstance(const LoxClass* klass) : klass_(std::move(klass)) {}
 
   std::any get(const lox::parser::Token& name);
@@ -25,8 +24,8 @@ class LoxInstance : public std::enable_shared_from_this<LoxInstance> {
   std::string toString() const;
 
  private:
-  // std::shared_ptr<const LoxClass> klass_;
-  const LoxClass* klass_;
+  std::shared_ptr<const LoxClass> klass_;
+  // const LoxClass* klass_;
   std::unordered_map<std::string, std::any> fields_;
 };
 

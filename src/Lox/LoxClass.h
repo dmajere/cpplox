@@ -10,8 +10,10 @@
 
 namespace lox {
 namespace lang {
-class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
+class LoxClass : public LoxCallable,
+                 public std::enable_shared_from_this<LoxClass> {
  public:
+  friend class LoxInstance;
   LoxClass(const std::string& name, const std::shared_ptr<LoxClass>& superclass,
            const std::unordered_map<std::string, std::shared_ptr<LoxFunction>>&
                methods)
@@ -28,9 +30,9 @@ class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
     return nullptr;
   }
 
-  std::any call(Interpreter* interpreter,
+  std::any call(Interpreter& interpreter,
                 const std::vector<std::any>& args) override {
-    auto instance = std::make_shared<LoxInstance>(this);
+    auto instance = std::make_shared<LoxInstance>(shared_from_this());
     std::shared_ptr<LoxFunction> initializer = Method("init");
     if (initializer != nullptr) {
       initializer->bind(instance)->call(interpreter, args);
