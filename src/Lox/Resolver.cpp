@@ -142,8 +142,16 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Function> stmt) {
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
   ClassType enclosing = currentClass_;
   currentClass_ = ClassType::Class;
+
   declare(stmt->name);
   define(stmt->name);
+
+  if (stmt->superclass) {
+    if (stmt->superclass->token.lexeme == stmt->name.lexeme) {
+      lox::lang::Lox::error(stmt->name, "A class can't inherit from itself.");
+    }
+    resolve(stmt->superclass);
+  }
 
   beginScope();
   scopes_.back().insert({"this", true});

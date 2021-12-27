@@ -12,16 +12,18 @@ namespace lox {
 namespace lang {
 class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
  public:
-  LoxClass(const std::string& name) : name_{name} {}
-  LoxClass(const std::string& name,
+  LoxClass(const std::string& name, const std::shared_ptr<LoxClass>& superclass,
            const std::unordered_map<std::string, std::shared_ptr<LoxFunction>>&
                methods)
-      : name_{name}, methods_(std::move(methods)) {}
+      : name_{name}, superclass_(superclass), methods_(std::move(methods)) {}
 
   std::shared_ptr<LoxFunction> Method(const std::string& name) const {
     auto it = methods_.find(name);
     if (it != methods_.end()) {
       return it->second;
+    }
+    if (superclass_) {
+      return superclass_->Method(name);
     }
     return nullptr;
   }
@@ -47,6 +49,7 @@ class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
 
  private:
   const std::string name_;
+  const std::shared_ptr<LoxClass> superclass_;
   const std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods_;
 };
 }  // namespace lang

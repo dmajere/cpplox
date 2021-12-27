@@ -3,7 +3,7 @@ declaration -> funcDeclaration
              | varDeclaration 
              | classDeclaration
              | statement;
-classDeclaration -> "class" IDENTIFIER "{" function* "}";
+classDeclaration -> "class" IDENTIFIER ("<" IDENTIFIER)? "{" function* "}";
 funcDeclaration -> "fun" function;
 function -> IDENTIFIER "(" parameters? ")" block;
 parameters -> IDENTIFIER ("," IDENTIFIER)* ;

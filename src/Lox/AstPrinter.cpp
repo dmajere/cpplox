@@ -197,7 +197,11 @@ std::any AstPrinter::visit(std::shared_ptr<const Function> stmt) {
 
 std::any AstPrinter::visit(std::shared_ptr<const Class> stmt) {
   std::stringstream ss;
-  ss << "(class " << stmt->name.lexeme << " {";
+  ss << "(class " << stmt->name.lexeme;
+  if (stmt->superclass) {
+    ss << " < " << lox::util::any_to_string(stmt->superclass->accept(this));
+  }
+  ss << " {";
   if (!stmt->methods.empty()) {
     for (const auto& method : stmt->methods) {
       if (method) {

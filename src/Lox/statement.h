@@ -170,13 +170,20 @@ struct Return : public Statement, std::enable_shared_from_this<Return> {
 struct Class : public Statement, std::enable_shared_from_this<Class> {
   Class(const Token& name,
         const std::vector<std::shared_ptr<Function>>& methods)
-      : name(name), methods(std::move(methods)) {}
+      : name(name), superclass(nullptr), methods(std::move(methods)) {}
+
+  Class(const Token& name, const std::shared_ptr<Variable>& superclass,
+        const std::vector<std::shared_ptr<Function>>& methods)
+      : name(name),
+        superclass(std::move(superclass)),
+        methods(std::move(methods)) {}
 
   std::any accept(StatementVisitor* visitor) override {
     return visitor->visit(shared_from_this());
   }
 
   const Token name;
+  const std::shared_ptr<Variable> superclass;
   const std::vector<std::shared_ptr<Function>> methods;
 };
 

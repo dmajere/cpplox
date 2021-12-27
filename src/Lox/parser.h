@@ -58,6 +58,12 @@ class Parser {
 
   std::shared_ptr<Statement> classDeclaration() {
     Token name = consume(TT::IDENTIFIER, kExpectIdentifier);
+    std::shared_ptr<Variable> superclass = nullptr;
+    if (match({TT::LESS})) {
+      consume(TT::IDENTIFIER, kExpectIdentifier);
+      superclass = std::make_shared<Variable>(previous());
+    }
+
     consume(TT::LEFT_BRACE, kExpectLeftBrace);
 
     std::vector<std::shared_ptr<Function>> methods = {};
@@ -65,7 +71,7 @@ class Parser {
       methods.push_back(funcDeclaration());
     }
     consume(TT::RIGHT_BRACE, kExpectRightBrace);
-    return std::make_shared<Class>(name, std::move(methods));
+    return std::make_shared<Class>(name, superclass, std::move(methods));
   }
 
   std::shared_ptr<Statement> varDeclaration() {

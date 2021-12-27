@@ -310,8 +310,17 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
-  env_->define(stmt->name.lexeme, nullptr);
+  std::shared_ptr<LoxClass> superclass = nullptr;
+  if (stmt->superclass) {
+    auto object = evaluate(stmt->superclass);
+    if (object.type() != typeid(std::shared_ptr<LoxClass>)) {
+      throw RuntimeError(stmt->superclass->token,
+                         "Superclass mast be a class.");
+    }
+    superclass = std::any_cast<std::shared_ptr<LoxClass>>(object);
+  }
 
+  env_->define(stmt->name.lexeme, nullptr);
   auto closure = std::shared_ptr<Environment>(env_);
 
   std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods;
@@ -320,8 +329,9 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
     methods.insert({method->name.lexeme, std::make_shared<LoxFunction>(
                                              method, closure, isInitializer)});
   }
-  auto klass = std::make_any<std::shared_ptr<LoxClass>>(
-      std::make_shared<LoxClass>(stmt->name.lexeme, std::move(methods)));
+  auto klass =
+      std::make_any<std::shared_ptr<LoxClass>>(std::make_shared<LoxClass>(
+          stmt->name.lexeme, superclass, std::move(methods)));
   env_->assign(stmt->name, klass);
 
   return nullptr;
