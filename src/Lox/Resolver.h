@@ -33,6 +33,7 @@ class Resolver : public lox::parser::ExpressionVisitor,
   std::any visit(std::shared_ptr<const lox::parser::Get> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::Set> expr) override;
   std::any visit(std::shared_ptr<const lox::parser::This> expr) override;
+  std::any visit(std::shared_ptr<const lox::parser::Super> expr) override;
 
   std::any visit(
       std::shared_ptr<const lox::parser::StatementExpression> stmt) override;
@@ -49,7 +50,7 @@ class Resolver : public lox::parser::ExpressionVisitor,
 
  private:
   enum class FunctionType { None, Function, Method, Initializer };
-  enum class ClassType { None, Class };
+  enum class ClassType { None, Class, Subclass };
 
   const std::shared_ptr<Interpreter> interpreter_;
   FunctionType currentFunction_;

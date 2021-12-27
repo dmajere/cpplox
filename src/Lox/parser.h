@@ -421,6 +421,12 @@ class Parser {
   }
 
   std::shared_ptr<Expression> primary() {
+    if (match({TT::SUPER})) {
+      Token keyword = previous();
+      consume(TT::DOT, "Expect '.' after super.");
+      Token method = consume(TT::IDENTIFIER, "Expect superclass method name.");
+      return std::make_shared<Super>(std::move(keyword), std::move(method));
+    }
     if (match({TT::THIS})) {
       return std::make_shared<This>(previous());
     }

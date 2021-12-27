@@ -302,6 +302,30 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::This> expr) {
   return lookupVariable(expr->token, expr);
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::Super> expr) {
+  auto it = locals_.find(expr);
+  if (it == locals_.end()) {
+    throw RuntimeError(expr->keyword, "Undefined super expression.");
+  }
+  int distance = it->second;
+
+  // auto object = env_->getAt(expr->keyword, distance);
+  // if (object.type() != typeid(std::shared_ptr<LoxClass>)) {
+  //   throw RuntimeError(expr->keyword, "Got non-class object from
+  //   environment.");
+  // }
+  auto superclass = std::any_cast<std::shared_ptr<LoxClass>>(
+      env_->getAt(expr->keyword, distance));
+  auto object = std::any_cast<std::shared_ptr<LoxInstance>>(env_->getAt(
+      lox::parser::Token(lox::parser::Token::TokenType::THIS, "this", 0),
+      distance - 1));
+  auto method = superclass->Method(expr->method.lexeme);
+  if (method == nullptr) {
+    throw RuntimeError(expr->method, "Undefined method.");
+  }
+  return method->bind(object);
+}
+
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   auto function = std::make_shared<LoxFunction>(stmt, env_);
   auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);
@@ -321,6 +345,10 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
   }
 
   env_->define(stmt->name.lexeme, nullptr);
+  if (stmt->superclass) {
+    env_ = std::make_shared<Environment>(env_);
+    env_->define("super", superclass);
+  }
   auto closure = std::shared_ptr<Environment>(env_);
 
   std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods;
@@ -332,6 +360,9 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
   auto klass =
       std::make_any<std::shared_ptr<LoxClass>>(std::make_shared<LoxClass>(
           stmt->name.lexeme, superclass, std::move(methods)));
+  if (stmt->superclass) {
+    env_ = env_->ancestor(1);
+  }
   env_->assign(stmt->name, klass);
 
   return nullptr;

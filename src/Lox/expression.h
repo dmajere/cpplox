@@ -27,6 +27,7 @@ struct Function;
 struct Get;
 struct Set;
 struct This;
+struct Super;
 
 class ExpressionVisitor {
  public:
@@ -43,6 +44,7 @@ class ExpressionVisitor {
   virtual std::any visit(std::shared_ptr<const Get> expr) = 0;
   virtual std::any visit(std::shared_ptr<const Set> expr) = 0;
   virtual std::any visit(std::shared_ptr<const This> expr) = 0;
+  virtual std::any visit(std::shared_ptr<const Super> expr) = 0;
   virtual ~ExpressionVisitor() = default;
 };
 
@@ -214,6 +216,18 @@ struct This : public Expression, std::enable_shared_from_this<This> {
   }
 
   const Token token;
+};
+
+struct Super : public Expression, std::enable_shared_from_this<Super> {
+  Super(const Token& keyword, const Token& method)
+      : keyword(keyword), method(method) {}
+
+  std::any accept(ExpressionVisitor* visitor) const override {
+    return visitor->visit(shared_from_this());
+  }
+
+  const Token keyword;
+  const Token method;
 };
 
 }  // namespace parser

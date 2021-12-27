@@ -44,4 +44,5 @@ primary -> NUMBER
          | "true" 
          | "false" 
          | "nil" 
+         | "super" "." IDENTIFIER
          | "(" expression ")";

@@ -116,6 +116,16 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::This> expr) {
   return nullptr;
 }
 
+std::any Resolver::visit(std::shared_ptr<const lox::parser::Super> expr) {
+  if (currentClass_ == ClassType::None) {
+    lox::lang::Lox::error(expr->keyword, "Super not inside class method.");
+  } else if (currentClass_ != ClassType::Subclass) {
+    lox::lang::Lox::error(expr->keyword, "Super must be inside subclass.");
+  }
+  resolve(expr, expr->keyword);
+  return nullptr;
+}
+
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Block> stmt) {
   beginScope();
   resolve(stmt->statements);
@@ -150,7 +160,11 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
     if (stmt->superclass->token.lexeme == stmt->name.lexeme) {
       lox::lang::Lox::error(stmt->name, "A class can't inherit from itself.");
     }
+    currentClass_ = ClassType::Subclass;
     resolve(stmt->superclass);
+
+    beginScope();
+    scopes_.back().insert({"super", true});
   }
 
   beginScope();
@@ -163,6 +177,9 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
     resolve(s, methodType);
   }
   endScope();
+  if (stmt->superclass) {
+    endScope();
+  }
   currentClass_ = enclosing;
   return nullptr;
 }

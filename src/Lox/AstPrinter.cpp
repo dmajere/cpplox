@@ -118,6 +118,12 @@ std::any AstPrinter::visit(std::shared_ptr<const This> expr) {
   return expr->token.lexeme;
 }
 
+std::any AstPrinter::visit(std::shared_ptr<const Super> expr) {
+  std::stringstream ss;
+  ss << "(" << expr->keyword.lexeme << "." << expr->method.lexeme << ")";
+  return ss.str();
+}
+
 std::any AstPrinter::visit(std::shared_ptr<const StatementExpression> stmt) {
   std::stringstream ss;
   ss << "(" << lox::util::any_to_string(stmt->expression->accept(this)) << ")";
