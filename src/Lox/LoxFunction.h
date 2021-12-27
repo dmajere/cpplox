@@ -7,6 +7,7 @@
 #include "Environment.h"
 #include "Interpreter.h"
 #include "LoxCallable.h"
+#include "LoxInstance.h"
 #include "RuntimeError.h"
 #include "Statement.h"
 
@@ -17,6 +18,7 @@ class LoxFunction : public LoxCallable {
   LoxFunction(const std::shared_ptr<const lox::parser::Function>& declaration,
               std::shared_ptr<Environment> closure)
       : declaration_(std::move(declaration)), closure_(closure) {}
+
   std::any call(Interpreter* interpreter,
                 const std::vector<std::any>& args) override {
     auto env = std::make_shared<Environment>(closure_);
@@ -32,7 +34,18 @@ class LoxFunction : public LoxCallable {
 
     return nullptr;
   }
+
   int arity() const override { return declaration_->parameters.size(); }
+
+  std::shared_ptr<LoxFunction> bind(std::shared_ptr<LoxInstance> instance) {
+    auto environment = std::make_shared<Environment>(closure_);
+    environment->define("this", instance);
+    return std::make_shared<LoxFunction>(declaration_, environment);
+  }
+
+  std::string toString() const {
+    return "Function " + declaration_->name.lexeme;
+  }
 
  private:
   const std::shared_ptr<const lox::parser::Function> declaration_;

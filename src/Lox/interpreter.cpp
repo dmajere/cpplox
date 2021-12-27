@@ -193,6 +193,8 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Call> expr) {
     function = std::any_cast<std::shared_ptr<LoxFunction>>(callee);
   } else if (callee.type() == typeid(std::shared_ptr<LoxClass>)) {
     function = std::any_cast<std::shared_ptr<LoxClass>>(callee);
+  } else if (callee.type() == typeid(std::shared_ptr<LoxCallable>)) {
+    function = std::any_cast<std::shared_ptr<LoxCallable>>(callee);
   } else {
     throw RuntimeError(expr->paren, "Can only call functions and classes.");
   }
@@ -296,6 +298,10 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Set> expr) {
   return nullptr;
 }
 
+std::any Interpreter::visit(std::shared_ptr<const lox::parser::This> expr) {
+  return lookupVariable(expr->token, expr);
+}
+
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
   auto function = std::make_shared<LoxFunction>(stmt, env_);
   auto callable = std::make_any<std::shared_ptr<LoxCallable>>(function);
@@ -304,16 +310,19 @@ std::any Interpreter::visit(std::shared_ptr<const lox::parser::Function> stmt) {
 }
 
 std::any Interpreter::visit(std::shared_ptr<const lox::parser::Class> stmt) {
-  std::cout << "define " << stmt->name.lexeme << "\n ";
+  env_->define(stmt->name.lexeme, nullptr);
+
+  auto closure = std::shared_ptr<Environment>(env_);
 
   std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods;
   for (const auto& method : stmt->methods) {
     methods.insert(
-        {method->name.lexeme, std::make_shared<LoxFunction>(method, env_)});
+        {method->name.lexeme, std::make_shared<LoxFunction>(method, closure)});
   }
   auto klass = std::make_any<std::shared_ptr<LoxClass>>(
       std::make_shared<LoxClass>(stmt->name.lexeme, std::move(methods)));
-  env_->define(stmt->name, klass);
+  env_->assign(stmt->name, klass);
+
   return nullptr;
 }
 

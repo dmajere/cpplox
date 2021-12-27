@@ -415,6 +415,9 @@ class Parser {
   }
 
   std::shared_ptr<Expression> primary() {
+    if (match({TT::THIS})) {
+      return std::make_shared<This>(previous());
+    }
     if (match({TT::FALSE})) {
       return std::make_shared<Literal>(false);
     }

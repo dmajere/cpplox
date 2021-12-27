@@ -1,5 +1,6 @@
 #pragma once
 #include <any>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -13,7 +14,7 @@ namespace lang {
 class LoxClass;
 class Token;
 
-class LoxInstance {
+class LoxInstance : public std::enable_shared_from_this<LoxInstance> {
  public:
   // LoxInstance(const std::shared_ptr<const LoxClass>& klass)
   //     : klass_(std::move(klass)) {}
@@ -21,6 +22,7 @@ class LoxInstance {
 
   std::any get(const lox::parser::Token& name);
   void set(const lox::parser::Token& name, std::any& value);
+  std::string toString() const;
 
  private:
   // std::shared_ptr<const LoxClass> klass_;

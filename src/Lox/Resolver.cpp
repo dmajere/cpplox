@@ -14,7 +14,8 @@ namespace lang {
 
 Resolver::Resolver(std::shared_ptr<Interpreter> interpreter)
     : interpreter_{std::move(interpreter)},
-      currentFunction_(FunctionType::None) {
+      currentFunction_(FunctionType::None),
+      currentClass_(ClassType::None) {
   beginScope();
 };
 Resolver::~Resolver() { endScope(); }
@@ -107,6 +108,14 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Set> expr) {
   return nullptr;
 }
 
+std::any Resolver::visit(std::shared_ptr<const lox::parser::This> expr) {
+  if (currentClass_ == ClassType::Class) {
+    lox::lang::Lox::error(expr->token, "This not inside class method.");
+  }
+  resolve(expr, expr->token);
+  return nullptr;
+}
+
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Block> stmt) {
   beginScope();
   resolve(stmt->statements);
@@ -131,12 +140,19 @@ std::any Resolver::visit(std::shared_ptr<const lox::parser::Function> stmt) {
 }
 
 std::any Resolver::visit(std::shared_ptr<const lox::parser::Class> stmt) {
+  ClassType enclosing = currentClass_;
+  currentClass_ = ClassType::Class;
   declare(stmt->name);
   define(stmt->name);
+
+  beginScope();
+  scopes_.back().insert({"this", true});
 
   for (const auto& s : stmt->methods) {
     resolve(s, FunctionType::Method);
   }
+  endScope();
+  currentClass_ = enclosing;
   return nullptr;
 }
 
@@ -198,7 +214,7 @@ void Resolver::resolve(std::shared_ptr<const lox::parser::Expression> expr,
     auto& scope = scopes_.at(i);
     auto it = scope.find(name.lexeme);
     if (it != scope.end()) {
-      interpreter_->resolve(expr, scopes_.size() - 1 - i);
+      interpreter_->resolve(expr, scopes_.size() - 2 - i);
       return;
     }
   }

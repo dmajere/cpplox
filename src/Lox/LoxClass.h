@@ -18,7 +18,6 @@ class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
                methods)
       : name_{name}, methods_(std::move(methods)) {}
 
-  std::string Name() const { return name_; }
   std::shared_ptr<LoxFunction> Method(const std::string& name) const {
     auto it = methods_.find(name);
     if (it != methods_.end()) {
@@ -31,7 +30,9 @@ class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
                 const std::vector<std::any>& args) override {
     auto instance = std::make_shared<LoxInstance>(this);
     std::shared_ptr<LoxFunction> initializer = Method("init");
-
+    if (initializer != nullptr) {
+      initializer->bind(instance)->call(interpreter, args);
+    }
     return instance;
   }
   int arity() const override {
@@ -41,6 +42,8 @@ class LoxClass : public LoxCallable, std::enable_shared_from_this<LoxClass> {
     }
     return 0;
   }
+
+  std::string toString() const { return "Class " + name_; }
 
  private:
   const std::string name_;

@@ -16,7 +16,7 @@ class Environment {
   Environment(std::shared_ptr<Environment> parent) : parent_(parent) {}
   ~Environment() = default;
 
-  void define(const std::string& name, std::any& value) {
+  void define(const std::string& name, std::any value) {
     values_.insert({name, value});
   }
 
@@ -58,6 +58,7 @@ class Environment {
   }
 
   std::any getAt(const lox::parser::Token& name, int distance) const {
+    distance = std::max(distance, 0);
     if (distance == 0) {
       return get(name);
     } else {

@@ -25,6 +25,7 @@ class AstPrinter : public ExpressionVisitor, StatementVisitor {
   std::any visit(std::shared_ptr<const Lambda> expr) override;
   std::any visit(std::shared_ptr<const Get> expr) override;
   std::any visit(std::shared_ptr<const Set> expr) override;
+  std::any visit(std::shared_ptr<const This> expr) override;
 
   std::any visit(std::shared_ptr<const StatementExpression> stmt) override;
   std::any visit(std::shared_ptr<const Print> stmt) override;
