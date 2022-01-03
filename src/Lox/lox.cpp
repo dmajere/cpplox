@@ -52,7 +52,6 @@ void Lox::runPrompt() {
   auto resolver = std::make_unique<lox::lang::Resolver>(interpreter);
   std::vector<lox::parser::Token> tokens;
 
-  // std::cout << "\n" << kLoxInputPrompt;
   for (std::string line;; std::getline(std::cin, line)) {
     hadError = false;
 
@@ -76,9 +75,7 @@ void Lox::runPrompt() {
         std::cout << "...";
         continue;
       }
-      // for (const auto& token : tokens) {
-      //   std::cout << "'" << token.lexeme << "'\n";
-      // }
+
       auto parser = lox::parser::Parser(tokens);
       auto statements = parser.parse();
 
@@ -88,27 +85,15 @@ void Lox::runPrompt() {
         continue;
       };
 
-      // std::cout << "=== AST ===\n";
-      // for (const auto& stmt : statements) {
-      //   if (stmt) {
-      //     std::cout << printer->print(stmt) << "\n";
-      //   }
-      // }
-      // std::cout << "=== === ===\n";
-
       try {
-        // std::cout << "=== Resolve ===\n";
         resolver->resolve(statements);
-        // std::cout << "=== ======= ===\n";
         if (hadError) {
           tokens.clear();
           std::cout << kLoxInputPrompt;
           continue;
         }
 
-        // std::cout << "=== Interpret ===\n";
         interpreter->evaluate(statements);
-        // std::cout << "=== ========= ===\n";
         tokens.clear();
       } catch (RuntimeError& error) {
         std::cout << "Error: " << error.what();
